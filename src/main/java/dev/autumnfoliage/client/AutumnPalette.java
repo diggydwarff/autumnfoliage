@@ -72,18 +72,17 @@ public final class AutumnPalette {
 
         Family dominantFamily = familyFor(path, speciesSalt);
 
-        // Species still provide the dominant seasonal character, but a real forest should not turn
-        // into one giant flat swatch simply because most of the canopy happens to be oak. Allow a
-        // minority of patches to drift into neighboring autumn families. This keeps oak-heavy and
-        // modded forests visibly mixed with scarlet, orange, gold and true yellow while remaining
-        // deterministic at a given world position.
-        int scale = Math.max(2, AutumnConfig.runtime().colorPatchSize());
-        int offsetX = (int) Math.floorMod(speciesSalt, scale);
-        int offsetZ = (int) Math.floorMod(speciesSalt >>> 17, scale);
-        int cellX = Math.floorDiv(pos.getX() + offsetX, scale);
-        int cellZ = Math.floorDiv(pos.getZ() + offsetZ, scale);
+        // Keep the dominant family coherent across an entire canopy. Earlier versions selected a
+        // family from small square world cells; a large crown crossing a cell edge could therefore
+        // become visibly half red and half orange. Use much larger jittered Voronoi-style
+        // "tree neighborhoods" for family selection instead. Their irregular borders avoid obvious
+        // north/south or east/west seams, while the smaller smooth shade noise below still gives a
+        // canopy natural internal variation.
+        int patchSize = Math.max(2, AutumnConfig.runtime().colorPatchSize());
+        int familyRegionSize = Math.max(24, patchSize * 3);
+        RegionKey region = nearestTreeRegion(pos, familyRegionSize, speciesSalt);
 
-        double familySelector = hash01(cellX, cellZ, speciesSalt ^ 0x6F17A11DL);
+        double familySelector = hash01(region.x(), region.z(), speciesSalt ^ 0x6F17A11DL);
         Family family = variedFamily(dominantFamily, familySelector);
         int[] palette = switch (family) {
             case RED -> RED_FAMILY;
@@ -91,9 +90,10 @@ public final class AutumnPalette {
             case GOLD -> GOLD_FAMILY;
         };
 
-        double shadeSelector = hash01(cellX, cellZ, speciesSalt ^ 0xA17A5EEDL);
-        int index = Math.min(palette.length - 1, (int) Math.floor(shadeSelector * palette.length));
-        return palette[index];
+        // Shade changes are smooth and remain inside the selected family. This gives individual
+        // trees texture without introducing hard block-grid color splits through the canopy.
+        double shadeSelector = smoothNoise(pos, speciesSalt ^ 0xA17A5EEDL, Math.max(6, patchSize));
+        return sampleGradient(palette, shadeSelector);
     }
 
 
@@ -138,9 +138,13 @@ public final class AutumnPalette {
     }
 
     private static double smoothNoise(BlockPos pos, long salt) {
-        int scale = Math.max(2, AutumnConfig.runtime().colorPatchSize());
-        double x = pos.getX() / (double) scale;
-        double z = pos.getZ() / (double) scale;
+        return smoothNoise(pos, salt, Math.max(2, AutumnConfig.runtime().colorPatchSize()));
+    }
+
+    private static double smoothNoise(BlockPos pos, long salt, int scale) {
+        int safeScale = Math.max(2, scale);
+        double x = pos.getX() / (double) safeScale;
+        double z = pos.getZ() / (double) safeScale;
 
         int x0 = fastFloor(x);
         int z0 = fastFloor(z);
@@ -158,6 +162,43 @@ public final class AutumnPalette {
         double nx0 = lerp(n00, n10, tx);
         double nx1 = lerp(n01, n11, tx);
         return lerp(nx0, nx1, tz);
+    }
+
+    /**
+     * Returns the nearest jittered region seed around the supplied position. This is a cheap
+     * two-dimensional Voronoi partition: neighboring regions have irregular borders instead of
+     * square grid lines, which is much less noticeable when a forest canopy crosses a boundary.
+     */
+    private static RegionKey nearestTreeRegion(BlockPos pos, int scale, long salt) {
+        double gx = pos.getX() / (double) scale;
+        double gz = pos.getZ() / (double) scale;
+        int baseX = fastFloor(gx);
+        int baseZ = fastFloor(gz);
+
+        int bestX = baseX;
+        int bestZ = baseZ;
+        double bestDistance = Double.POSITIVE_INFINITY;
+
+        for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                int cellX = baseX + dx;
+                int cellZ = baseZ + dz;
+                double jitterX = 0.15 + hash01(cellX, cellZ, salt ^ 0x31D0A55EL) * 0.70;
+                double jitterZ = 0.15 + hash01(cellX, cellZ, salt ^ 0x58C3E91BL) * 0.70;
+                double pointX = cellX + jitterX;
+                double pointZ = cellZ + jitterZ;
+                double ddx = gx - pointX;
+                double ddz = gz - pointZ;
+                double distance = ddx * ddx + ddz * ddz;
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestX = cellX;
+                    bestZ = cellZ;
+                }
+            }
+        }
+
+        return new RegionKey(bestX, bestZ);
     }
 
     private static int sampleGradient(int[] colors, double value) {
@@ -298,6 +339,8 @@ public final class AutumnPalette {
     private static double clamp01(double value) {
         return Math.max(0.0, Math.min(1.0, value));
     }
+
+    private record RegionKey(int x, int z) {}
 
     private enum Family {
         RED,

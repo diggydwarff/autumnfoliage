@@ -34,6 +34,7 @@ public final class AutumnSettingsScreen extends Screen {
     private final Screen parent;
     private final Draft draft;
     private final ClientConfigSnapshot defaults;
+    private final boolean integratedOwner;
     private final List<RowText> rowText = new ArrayList<>();
 
     private Page page = Page.GENERAL;
@@ -49,8 +50,16 @@ public final class AutumnSettingsScreen extends Screen {
     public AutumnSettingsScreen(Screen parent) {
         super(Component.literal("Autumn Foliage Settings"));
         this.parent = parent;
+        this.integratedOwner = Minecraft.getInstance().hasSingleplayerServer();
         this.draft = new Draft(AutumnConfig.clientSnapshot());
         this.defaults = AutumnConfig.defaultSnapshot();
+
+        // A singleplayer world still has an integrated server and therefore receives the same
+        // server-policy handshake as multiplayer. The world owner must not be treated like a remote
+        // client: seed the draft from the effective world policy and allow it to be edited directly.
+        if (integratedOwner && ServerZoneOverride.isActive()) {
+            this.draft.applyEffectiveWorld(AutumnConfig.runtime());
+        }
     }
 
     @Override
@@ -429,19 +438,19 @@ public final class AutumnSettingsScreen extends Screen {
     }
 
     private boolean serverLocksEnabled() {
-        return ServerZoneOverride.isActive() && !AutumnServerConfig.allowClientEnabledOverride();
+        return !integratedOwner && ServerZoneOverride.isActive() && !AutumnServerConfig.allowClientEnabledOverride();
     }
 
     private boolean serverLocksZones() {
-        return ServerZoneOverride.isActive() && !AutumnServerConfig.allowClientZoneOverride();
+        return !integratedOwner && ServerZoneOverride.isActive() && !AutumnServerConfig.allowClientZoneOverride();
     }
 
     private boolean serverLocksTropics() {
-        return ServerZoneOverride.isActive() && !AutumnServerConfig.allowClientTropicalOverride();
+        return !integratedOwner && ServerZoneOverride.isActive() && !AutumnServerConfig.allowClientTropicalOverride();
     }
 
     private boolean serverLocksAppearance() {
-        return ServerZoneOverride.isActive() && !AutumnServerConfig.allowClientAppearanceOverride();
+        return !integratedOwner && ServerZoneOverride.isActive() && !AutumnServerConfig.allowClientAppearanceOverride();
     }
 
     private void resetCurrentPage() {
@@ -496,7 +505,16 @@ public final class AutumnSettingsScreen extends Screen {
     }
 
     private void saveAndClose() {
-        AutumnConfig.applyClientSnapshot(draft.snapshot());
+        ClientConfigSnapshot snapshot = draft.snapshot();
+        AutumnConfig.applyClientSnapshot(snapshot);
+
+        // In singleplayer the player owns the integrated server. Mirror world-facing values into
+        // the SERVER config so the effective policy changes immediately and is preserved for that
+        // world (and for clients if the world is later opened to LAN).
+        if (integratedOwner) {
+            AutumnServerConfig.applyIntegratedOwnerSnapshot(snapshot);
+        }
+
         ClientEvents.refreshRendering();
         Minecraft.getInstance().setScreen(parent);
     }
@@ -523,11 +541,19 @@ public final class AutumnSettingsScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         graphics.drawCenteredString(this.font, this.title, this.width / 2, compactLayout ? 12 : 16, 0xFFFFFF);
-        String status = ServerZoneOverride.isActive()
-                ? "Server policy active - locked values are marked Server."
-                : "Local client settings";
-        graphics.drawCenteredString(this.font, status, this.width / 2, compactLayout ? 26 : 30,
-                ServerZoneOverride.isActive() ? 0xF0C674 : 0xD0D0D0);
+        String status;
+        int statusColor;
+        if (integratedOwner) {
+            status = "Singleplayer world - all world settings are editable.";
+            statusColor = 0xB8E6B8;
+        } else if (ServerZoneOverride.isActive()) {
+            status = "Server policy active - locked values are marked Server.";
+            statusColor = 0xF0C674;
+        } else {
+            status = "Local client settings";
+            statusColor = 0xD0D0D0;
+        }
+        graphics.drawCenteredString(this.font, status, this.width / 2, compactLayout ? 26 : 30, statusColor);
 
         if (!pageMessage.isBlank()) {
             graphics.drawString(this.font, pageMessage, panelLeft, contentTop + rowHeight, 0xD0D0D0, false);
@@ -618,6 +644,22 @@ public final class AutumnSettingsScreen extends Screen {
             evergreenKeywords = new ArrayList<>(source.evergreenKeywords());
             tropicalKeywords = new ArrayList<>(source.tropicalKeywords());
             tropicalBiomeKeywords = new ArrayList<>(source.tropicalBiomeKeywords());
+        }
+
+        private void applyEffectiveWorld(RuntimeSettings effective) {
+            enabled = effective.enabled();
+            axis = effective.axis();
+            ranges.clear();
+            ranges.addAll(effective.ranges());
+            leafStrength = effective.leafStrength();
+            foliageVibrancy = effective.foliageVibrancy();
+            foliageBrightness = effective.foliageBrightness();
+            saplingStrength = effective.saplingStrength();
+            grassStrength = effective.grassStrength();
+            vineAndShrubStrength = effective.vineAndShrubStrength();
+            evergreenStrength = effective.evergreenStrength();
+            autumnalTropics = effective.autumnalTropics();
+            colorPatchSize = effective.colorPatchSize();
         }
 
         private ClientConfigSnapshot snapshot() {

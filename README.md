@@ -10,6 +10,7 @@ It was developed using the supplied **Autumnpack 3.0** resource pack as a visual
 - Broad leaf/vegetation detection through tags, block classes and mod-friendly naming fallbacks.
 - Covers leaves, saplings, grass/ferns, vines, shrubs and other common foliage.
 - Species-aware red, orange and gold palette families with deterministic world-space variation.
+- Canopy-coherent color regions use irregular boundaries and smooth within-tree shading to avoid trees splitting into obvious half-red/half-orange blocks.
 - Brightness and vibrancy controls designed to remain colorful even on dark modded leaf textures.
 - Conifers stay mostly green by default.
 - Tropical/jungle vegetation can remain green or become autumnal.
@@ -38,7 +39,7 @@ The screen is divided into five simple tabs. **Save & Close** commits the draft 
 
 - **Vibrancy** - saturation of autumn reds, oranges and yellows.
 - **Brightness** - midtone lift for foliage colors.
-- **Color Patch Size** - approximate size of neighboring foliage patches that share a similar color family.
+- **Color Patch Size** - controls local color variation scale. Family changes use much larger irregular tree-neighborhood regions, while shading varies smoothly within a canopy.
 
 ### Plants
 
@@ -92,7 +93,9 @@ The server mod is optional.
 
 If the server does not have Autumn Foliage installed, all settings come from the local client configuration.
 
-If the server does have the mod installed, it can make some settings authoritative. In the in-game client GUI, authoritative values are shown directly and their controls are disabled with a `Server:` label rather than leaving the player guessing why a local value is not taking effect.
+If the server does have the mod installed, it can make some settings authoritative. On a **remote multiplayer server**, authoritative values are shown directly and their controls are disabled with a `Server:` label rather than leaving the player guessing why a local value is not taking effect.
+
+In **singleplayer**, the integrated server belongs to the local player, so world/server-owned values are not locked. The same GUI edits them directly and saves those world-facing values back into the world server config. This also means the chosen world policy is already in place if the world is later opened to LAN.
 
 The server can independently choose whether clients may override:
 

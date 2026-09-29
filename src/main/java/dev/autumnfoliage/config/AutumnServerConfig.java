@@ -158,6 +158,31 @@ public final class AutumnServerConfig {
         );
     }
 
+    /**
+     * Applies the player-facing world settings from the owner of an integrated singleplayer server.
+     * This keeps the normal server-authoritative model intact while allowing the world owner to edit
+     * those values from the same in-game screen. Client-only compatibility lists are intentionally
+     * not copied into the server config.
+     */
+    public static void applyIntegratedOwnerSnapshot(ClientConfigSnapshot snapshot) {
+        ENABLED.set(snapshot.enabled());
+        AXIS.set(snapshot.axis());
+        RANGES.set(snapshot.ranges().stream()
+                .map(r -> r.min() + "," + r.max() + "," + r.fadeDistance())
+                .toList());
+
+        LEAF_STRENGTH.set(snapshot.leafStrength());
+        FOLIAGE_VIBRANCY.set(snapshot.foliageVibrancy());
+        FOLIAGE_BRIGHTNESS.set(snapshot.foliageBrightness());
+        SAPLING_STRENGTH.set(snapshot.saplingStrength());
+        GRASS_STRENGTH.set(snapshot.grassStrength());
+        VINE_SHRUB_STRENGTH.set(snapshot.vineAndShrubStrength());
+        EVERGREEN_STRENGTH.set(snapshot.evergreenStrength());
+        COLOR_PATCH_SIZE.set(snapshot.colorPatchSize());
+        AUTUMNAL_TROPICS.set(snapshot.autumnalTropics());
+        SPEC.save();
+    }
+
     public static ZoneSettings snapshot() {
         List<AutumnRange> parsed = new ArrayList<>();
         for (String raw : RANGES.get()) {
