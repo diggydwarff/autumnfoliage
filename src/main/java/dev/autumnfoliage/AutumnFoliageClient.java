@@ -2,6 +2,7 @@ package dev.autumnfoliage;
 
 import dev.autumnfoliage.client.ClientEvents;
 import dev.autumnfoliage.client.ClientGameEvents;
+import dev.autumnfoliage.compat.DistantHorizonsBridge;
 import dev.autumnfoliage.config.AutumnConfig;
 import dev.autumnfoliage.network.ServerZoneOverride;
 import net.neoforged.api.distmarker.Dist;
@@ -26,5 +27,6 @@ public final class AutumnFoliageClient {
         modBus.register(ClientEvents.class);
         NeoForge.EVENT_BUS.register(ClientGameEvents.class);
         ServerZoneOverride.setChangeListener(ClientEvents::refreshRendering);
+        DistantHorizonsBridge.initIfPresent();
     }
 }

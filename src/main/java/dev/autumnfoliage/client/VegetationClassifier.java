@@ -75,6 +75,20 @@ public final class VegetationClassifier {
     }
 
     /**
+     * Distant Horizons can resolve LOD colors for positions that are outside Minecraft's loaded
+     * client chunks. In that case its biome wrapper serial string is the reliable biome source.
+     */
+    public static boolean isTropicalBiomeSerial(String biomeSerial) {
+        if (biomeSerial == null || biomeSerial.isBlank()) {
+            return false;
+        }
+        return containsAny(
+                biomeSerial.toLowerCase(Locale.ROOT),
+                AutumnConfig.runtime().tropicalBiomeKeywords()
+        );
+    }
+
+    /**
      * Whether it is reasonably safe to assign tint index 0 to every otherwise-untinted quad
      * in this block model. Ground blocks such as grass blocks are intentionally excluded so
      * their dirt/soil faces are not recolored.

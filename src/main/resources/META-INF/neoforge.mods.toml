@@ -4,11 +4,11 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="autumnfoliage"
-version="0.1.0-alpha.4"
+version="0.1.0-alpha.8"
 displayName="Autumn Foliage"
 displayTest="IGNORE_ALL_VERSION"
 description='''
-Client-side autumn vegetation rendering with broad vanilla/mod compatibility, smooth coordinate zones, in-game configuration, and optional server policy with selective client overrides.
+Client-side autumn vegetation rendering with broad vanilla/mod compatibility, smooth coordinate zones, Distant Horizons LOD recoloring, in-game configuration, and optional server policy with selective client overrides.
 '''
 
 [[accessTransformers]]
@@ -27,3 +27,10 @@ type="required"
 versionRange="[1.21.1]"
 ordering="NONE"
 side="BOTH"
+
+[[dependencies.autumnfoliage]]
+modId="distanthorizons"
+type="optional"
+versionRange="[3.3.1,)"
+ordering="NONE"
+side="CLIENT"

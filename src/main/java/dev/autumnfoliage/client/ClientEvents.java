@@ -1,6 +1,7 @@
 package dev.autumnfoliage.client;
 
 import dev.autumnfoliage.AutumnFoliage;
+import dev.autumnfoliage.compat.DistantHorizonsBridge;
 import dev.autumnfoliage.config.AutumnConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColor;
@@ -65,6 +66,7 @@ public final class ClientEvents {
             if (minecraft.levelRenderer != null) {
                 minecraft.levelRenderer.allChanged();
             }
+            DistantHorizonsBridge.refreshRenderData();
         });
     }
 }

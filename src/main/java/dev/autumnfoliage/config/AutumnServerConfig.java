@@ -18,6 +18,8 @@ public final class AutumnServerConfig {
     private static final ModConfigSpec.ConfigValue<List<? extends String>> RANGES;
 
     private static final ModConfigSpec.DoubleValue LEAF_STRENGTH;
+    private static final ModConfigSpec.DoubleValue FOLIAGE_VIBRANCY;
+    private static final ModConfigSpec.DoubleValue FOLIAGE_BRIGHTNESS;
     private static final ModConfigSpec.DoubleValue SAPLING_STRENGTH;
     private static final ModConfigSpec.DoubleValue GRASS_STRENGTH;
     private static final ModConfigSpec.DoubleValue VINE_SHRUB_STRENGTH;
@@ -64,6 +66,14 @@ public final class AutumnServerConfig {
         LEAF_STRENGTH = builder
                 .translation("autumnfoliage.config.server.leafStrength")
                 .defineInRange("leafStrength", 1.0, 0.0, 1.0);
+        FOLIAGE_VIBRANCY = builder
+                .comment("Color saturation multiplier for autumn leaf-style foliage.")
+                .translation("autumnfoliage.config.server.foliageVibrancy")
+                .defineInRange("foliageVibrancy", 1.35, 0.50, 1.50);
+        FOLIAGE_BRIGHTNESS = builder
+                .comment("Brightness/luminance lift for autumn leaf-style foliage.")
+                .translation("autumnfoliage.config.server.foliageBrightness")
+                .defineInRange("foliageBrightness", 1.20, 0.50, 1.50);
         SAPLING_STRENGTH = builder
                 .translation("autumnfoliage.config.server.saplingStrength")
                 .defineInRange("saplingStrength", 0.9, 0.0, 1.0);
@@ -138,6 +148,8 @@ public final class AutumnServerConfig {
     public static AppearanceSettings appearanceSnapshot() {
         return new AppearanceSettings(
                 LEAF_STRENGTH.get(),
+                FOLIAGE_VIBRANCY.get(),
+                FOLIAGE_BRIGHTNESS.get(),
                 SAPLING_STRENGTH.get(),
                 GRASS_STRENGTH.get(),
                 VINE_SHRUB_STRENGTH.get(),

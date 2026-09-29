@@ -19,6 +19,8 @@ public final class AutumnConfig {
     private static final ModConfigSpec.BooleanValue FORCE_TINT_UNTINTED;
 
     private static final ModConfigSpec.DoubleValue LEAF_STRENGTH;
+    private static final ModConfigSpec.DoubleValue FOLIAGE_VIBRANCY;
+    private static final ModConfigSpec.DoubleValue FOLIAGE_BRIGHTNESS;
     private static final ModConfigSpec.DoubleValue SAPLING_STRENGTH;
     private static final ModConfigSpec.DoubleValue GRASS_STRENGTH;
     private static final ModConfigSpec.DoubleValue VINE_SHRUB_STRENGTH;
@@ -73,6 +75,18 @@ public final class AutumnConfig {
         LEAF_STRENGTH = builder
                 .translation("autumnfoliage.config.client.leafStrength")
                 .defineInRange("leafStrength", 1.0, 0.0, 1.0);
+        FOLIAGE_VIBRANCY = builder
+                .comment(
+                        "Color saturation multiplier for autumn leaf-style foliage.",
+                        "1.0 is the base palette; values above 1.0 produce richer reds/oranges/golds.")
+                .translation("autumnfoliage.config.client.foliageVibrancy")
+                .defineInRange("foliageVibrancy", 1.35, 0.50, 1.50);
+        FOLIAGE_BRIGHTNESS = builder
+                .comment(
+                        "Brightness/luminance lift for autumn leaf-style foliage.",
+                        "This is especially useful for darker modded leaf textures, which multiply the autumn tint into their texture shading.")
+                .translation("autumnfoliage.config.client.foliageBrightness")
+                .defineInRange("foliageBrightness", 1.20, 0.50, 1.50);
         SAPLING_STRENGTH = builder
                 .translation("autumnfoliage.config.client.saplingStrength")
                 .defineInRange("saplingStrength", 0.9, 0.0, 1.0);
@@ -182,6 +196,8 @@ public final class AutumnConfig {
                 ranges,
                 FORCE_TINT_UNTINTED.get(),
                 appearance.leafStrength(),
+                appearance.foliageVibrancy(),
+                appearance.foliageBrightness(),
                 appearance.saplingStrength(),
                 appearance.grassStrength(),
                 appearance.vineAndShrubStrength(),
@@ -207,6 +223,8 @@ public final class AutumnConfig {
     public static AppearanceSettings localAppearanceSnapshot() {
         return new AppearanceSettings(
                 LEAF_STRENGTH.get(),
+                FOLIAGE_VIBRANCY.get(),
+                FOLIAGE_BRIGHTNESS.get(),
                 SAPLING_STRENGTH.get(),
                 GRASS_STRENGTH.get(),
                 VINE_SHRUB_STRENGTH.get(),

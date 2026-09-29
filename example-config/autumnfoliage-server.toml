@@ -7,6 +7,8 @@ ranges = []
 
 [appearance]
 leafStrength = 1.0
+foliageVibrancy = 1.25
+foliageBrightness = 1.12
 saplingStrength = 0.9
 grassStrength = 0.46
 vineAndShrubStrength = 0.72

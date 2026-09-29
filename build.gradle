@@ -66,6 +66,9 @@ configurations {
 }
 
 dependencies {
+    // Compile against the DH API when present, but do not make it a runtime dependency for users.
+    compileOnly "maven.modrinth:uCdwusMi:IcOcoekl"
+
     // Development/runtime only: always include Distant Horizons in runClient compatibility tests.
     // This is not packaged into Autumn Foliage and is not a required end-user dependency.
     localRuntime "maven.modrinth:uCdwusMi:IcOcoekl"
