@@ -1,12 +1,11 @@
 modLoader="javafml"
-loaderVersion="${loader_version_range}"
-license="${mod_license}"
+loaderVersion="[1,)"
+license="All Rights Reserved"
 
 [[mods]]
-modId="${mod_id}"
-version="${mod_version}"
-displayName="${mod_name}"
-# The mod is intentionally optional on either side. Its only server component is optional zone policy sync.
+modId="autumnfoliage"
+version="0.1.0-alpha.2.1"
+displayName="Autumn Foliage"
 displayTest="IGNORE_ALL_VERSION"
 description='''
 Client-side autumn vegetation rendering with broad vanilla/mod compatibility, smooth coordinate zones, and optional server-authoritative zone configuration.
@@ -15,16 +14,16 @@ Client-side autumn vegetation rendering with broad vanilla/mod compatibility, sm
 [[accessTransformers]]
 file="META-INF/accesstransformer.cfg"
 
-[[dependencies.${mod_id}]]
+[[dependencies.autumnfoliage]]
 modId="neoforge"
 type="required"
-versionRange="[${neo_version},)"
+versionRange="[21.1.252,)"
 ordering="NONE"
 side="BOTH"
 
-[[dependencies.${mod_id}]]
+[[dependencies.autumnfoliage]]
 modId="minecraft"
 type="required"
-versionRange="${minecraft_version_range}"
+versionRange="[1.21.1]"
 ordering="NONE"
 side="BOTH"
