@@ -24,6 +24,9 @@ public final class ClientGameEvents {
 
     private static void refreshChunks() {
         Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft == null) {
+            return;
+        }
         minecraft.execute(() -> {
             if (minecraft.levelRenderer != null) {
                 minecraft.levelRenderer.allChanged();

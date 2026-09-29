@@ -38,22 +38,14 @@ public final class ClientEvents {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onModifyBakingResult(ModelEvent.ModifyBakingResult event) {
-        // The event runs on a model-reload worker thread, so only touch the provided model map here.
-        // Runtime vegetation classification happens later when getQuads receives a BlockState.
-        //
-        // IMPORTANT: only wrap block-state models. Item models use the "inventory" variant and
-        // many mods (notably Create) rely on the baked model retaining a concrete custom type.
-        // Wrapping those models breaks their renderer casts even though state == null means we
-        // would never tint the item anyway. Standalone/additional models are skipped for the
-        // same reason: they are not needed for world foliage tinting and may have custom renderers.
-        event.getModels().replaceAll((location, model) -> {
-            String variant = location.getVariant();
-            if ("inventory".equals(variant) || "standalone".equals(variant) ||
-                    model instanceof TintForcingBakedModel) {
-                return model;
-            }
-            return new TintForcingBakedModel(model);
-        });
+        // 1.21.8 block rendering uses BlockStateModel rather than the pre-1.21.5 BakedModel path.
+        // Modify only block-state models: item models and custom item renderers remain untouched.
+        // Runtime vegetation classification still happens during collectParts(), where NeoForge
+        // supplies the actual BlockState/world context used by the chunk mesher.
+        TintForcingBlockStateModel.clearCache();
+        event.getBakingResult().blockStateModels().replaceAll((state, model) ->
+                model instanceof TintForcingBlockStateModel ? model : new TintForcingBlockStateModel(model)
+        );
     }
 
     @SubscribeEvent
@@ -71,9 +63,17 @@ public final class ClientEvents {
     }
 
     public static void refreshRendering() {
+        // Config Loading can fire during NeoForge startup before Minecraft has constructed its
+        // client singleton. Refresh the config/classification state immediately, but only touch
+        // renderers once a live client exists.
         AutumnConfig.refresh();
         VegetationClassifier.clearCache();
+
         Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft == null) {
+            return;
+        }
+
         minecraft.execute(() -> {
             if (minecraft.levelRenderer != null) {
                 minecraft.levelRenderer.allChanged();

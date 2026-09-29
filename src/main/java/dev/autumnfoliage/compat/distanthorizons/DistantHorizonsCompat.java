@@ -67,20 +67,36 @@ public final class DistantHorizonsCompat {
                         }
 
                         IDhApiBiomeWrapper biome = value.getBiomeWrapper();
-                        String biomeSerial = biome == null ? "" : biome.getSerialString();
+                        String biomeSerial = biomeNameCompat(biome);
                         BlockPos pos = new BlockPos(
                                 value.getBlockPosX(),
                                 value.getBlockPosY(),
                                 value.getBlockPosZ()
                         );
 
-                        int recolored = AutumnColorizer.colorForDistantHorizons(
-                                state,
-                                pos,
-                                value.getColorAsInt(),
-                                value.getBaseColorAsInt(),
-                                biomeSerial
-                        );
+                        int originalColor = value.getColorAsInt();
+                        int recolored;
+                        try {
+                            // DH API 7.1+ exposes the untinted texture/base sample. Using it gives
+                            // the closest match to Minecraft/Sodium's normal texture * tint path.
+                            recolored = AutumnColorizer.colorForDistantHorizons(
+                                    state,
+                                    pos,
+                                    originalColor,
+                                    value.getBaseColorAsInt(),
+                                    biomeSerial
+                            );
+                        } catch (NoSuchMethodError | AbstractMethodError ignored) {
+                            // Older DH API implementations do not expose getBaseColorAsInt(). Keep the
+                            // integration working with a luminance-preserving approximation rather
+                            // than disabling autumn LOD colors entirely.
+                            recolored = AutumnColorizer.colorForDistantHorizonsLegacy(
+                                    state,
+                                    pos,
+                                    originalColor,
+                                    biomeSerial
+                            );
+                        }
 
                         if (recolored != value.getColorAsInt()) {
                             value.setColor(
@@ -103,7 +119,10 @@ public final class DistantHorizonsCompat {
                     public void afterDistantHorizonsInit(DhApiEventParam<Void> event) {
                         // Keep the cache invalidation on Minecraft's client thread. DH may fire
                         // its init event from loader/setup code rather than the render thread.
-                        Minecraft.getInstance().execute(DistantHorizonsCompat::refreshRenderData);
+                        Minecraft minecraft = Minecraft.getInstance();
+                        if (minecraft != null) {
+                            minecraft.execute(DistantHorizonsCompat::refreshRenderData);
+                        }
                     }
                 }
         );
@@ -112,6 +131,22 @@ public final class DistantHorizonsCompat {
     public static void refreshRenderData() {
         if (DhApi.Delayed.renderProxy != null) {
             DhApi.Delayed.renderProxy.clearRenderDataCache();
+        }
+    }
+
+    private static String biomeNameCompat(IDhApiBiomeWrapper biome) {
+        if (biome == null) {
+            return "";
+        }
+        try {
+            // Added by DH API 7.1.0. It normally contains the namespace/path and is the most
+            // reliable input for our tropical-biome keyword matcher.
+            return biome.getSerialString();
+        } catch (NoSuchMethodError | AbstractMethodError ignored) {
+            // Older DH API implementations only expose getName(). This is still sufficient for names such as
+            // jungle/rainforest/tropical and keeps the integration tolerant of older API implementations.
+            String name = biome.getName();
+            return name == null ? "" : name;
         }
     }
 

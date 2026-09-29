@@ -66,12 +66,81 @@ configurations {
 }
 
 dependencies {
-    // Compile against the DH API when present, but do not make it a runtime dependency for users.
-    compileOnly "maven.modrinth:uCdwusMi:IcOcoekl"
+    // Compile against the standalone DH API rather than DH internals. API 7.1 remains a
+    // compatible baseline for the methods used here; newer DH releases retain these methods.
+    compileOnly "maven.modrinth:Xs0XTOVv:PzM0NbxE"
 
-    // Development/runtime only: always include Distant Horizons in runClient compatibility tests.
-    // This is not packaged into Autumn Foliage and is not a required end-user dependency.
-    localRuntime "maven.modrinth:uCdwusMi:IcOcoekl"
+    // Development/runtime only. Use the current stable 1.21.8 NeoForge DH release.
+    // DH is not bundled into Autumn Foliage and remains optional for end users.
+    localRuntime "maven.modrinth:uCdwusMi:NlABbR6u"
+}
+
+
+// NeoForge 1.21.8 enables the Blaze3D validation wrapper in development.
+// Distant Horizons accesses the backing OpenGL texture implementation directly, so with
+// validation enabled DH receives ValidationGpuTexture instead of GlTexture and crashes as
+// soon as a world is rendered. Keep validation disabled for this project's client dev run.
+def neoForgeClientConfigFile = file('run/config/neoforge-client.toml')
+def prepareNeoForgeClientConfig = tasks.register('prepareNeoForgeClientConfig') {
+    group = 'autumn foliage development'
+    description = 'Disables NeoForge Blaze3D validation for Distant Horizons compatibility in runClient.'
+
+    // The runtime config can be regenerated or corrected by NeoForge between runs, so always
+    // verify the setting immediately before launching the client.
+    outputs.upToDateWhen { false }
+
+    doLast {
+        File configFile = neoForgeClientConfigFile
+        configFile.parentFile.mkdirs()
+
+        String key = 'enableB3DValidationLayer'
+        String desiredLine = key + ' = false'
+
+        if (!configFile.exists()) {
+            configFile.setText(
+                '# Development compatibility: Distant Horizons requires the raw OpenGL GPU texture implementation.\n' +
+                desiredLine + '\n',
+                'UTF-8'
+            )
+            return
+        }
+
+        String contents = configFile.getText('UTF-8')
+        def matcher = contents =~ /(?m)^\s*enableB3DValidationLayer\s*=\s*(?:true|false)\s*$/
+        if (matcher.find()) {
+            contents = contents.replaceAll(
+                /(?m)^\s*enableB3DValidationLayer\s*=\s*(?:true|false)\s*$/,
+                desiredLine
+            )
+        } else {
+            if (!contents.endsWith('\n')) {
+                contents += '\n'
+            }
+            contents += '\n# Development compatibility with Distant Horizons\n' + desiredLine + '\n'
+        }
+
+        configFile.setText(contents, 'UTF-8')
+    }
+}
+
+tasks.named('runClient').configure {
+    dependsOn prepareNeoForgeClientConfig
+}
+
+
+// Keep packaged compatibility ranges independent from the NeoForge build used for development.
+// This lets us develop on the latest 21.8.x while allowing the entire Minecraft 1.21.8
+// NeoForge line at runtime.
+tasks.named('processResources').configure {
+    def replaceProperties = [
+        neo_version_range: project.neo_version_range,
+        dh_version_range: project.dh_version_range
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand replaceProperties
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {

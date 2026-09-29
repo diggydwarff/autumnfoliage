@@ -44,7 +44,7 @@ public final class VegetationClassifier {
      * Biome-level tropical detection catches generic vegetation (especially vines and grass)
      * growing inside jungle/rainforest biomes even when the block id itself is generic.
      *
-     * BlockAndTintGetter deliberately does not expose getBiome in 1.21.1. Vanilla chunk meshing
+     * BlockAndTintGetter deliberately does not expose getBiome in 1.21.8. Vanilla chunk meshing
      * commonly passes RenderChunkRegion here, so we use a LevelReader when available and otherwise
      * fall back to the active ClientLevel. The fallback is read-only and points at the same loaded
      * world currently being meshed.
@@ -58,7 +58,8 @@ public final class VegetationClassifier {
         if (level instanceof LevelReader reader) {
             biome = reader.getBiome(pos);
         } else {
-            ClientLevel clientLevel = Minecraft.getInstance().level;
+            Minecraft minecraft = Minecraft.getInstance();
+            ClientLevel clientLevel = minecraft == null ? null : minecraft.level;
             if (clientLevel != null) {
                 biome = clientLevel.getBiome(pos);
             }

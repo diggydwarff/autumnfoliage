@@ -530,9 +530,9 @@ public final class AutumnSettingsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // In 1.21.x the blurred in-world background can be resolved while widget rendering is flushed.
-        // Draw all foreground text after super.render() so labels never get caught in that blur pass.
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        // Minecraft 1.21.8 extracts the screen background in a separate render stratum before
+        // render() is called. Calling renderBackground() here would submit a second blur in the
+        // same frame and crash with "Can only blur once per frame".
 
         int panelTop = Math.max(64, contentTop - 6);
         int panelBottom = Math.max(panelTop + 24, footerY - 6);
@@ -540,32 +540,32 @@ public final class AutumnSettingsScreen extends Screen {
 
         super.render(graphics, mouseX, mouseY, partialTick);
 
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, compactLayout ? 12 : 16, 0xFFFFFF);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, compactLayout ? 12 : 16, 0xFFFFFFFF);
         String status;
         int statusColor;
         if (integratedOwner) {
             status = "Singleplayer world - all world settings are editable.";
-            statusColor = 0xB8E6B8;
+            statusColor = 0xFFB8E6B8;
         } else if (ServerZoneOverride.isActive()) {
             status = "Server policy active - locked values are marked Server.";
-            statusColor = 0xF0C674;
+            statusColor = 0xFFF0C674;
         } else {
             status = "Local client settings";
-            statusColor = 0xD0D0D0;
+            statusColor = 0xFFD0D0D0;
         }
         graphics.drawCenteredString(this.font, status, this.width / 2, compactLayout ? 26 : 30, statusColor);
 
         if (!pageMessage.isBlank()) {
-            graphics.drawString(this.font, pageMessage, panelLeft, contentTop + rowHeight, 0xD0D0D0, false);
+            graphics.drawString(this.font, pageMessage, panelLeft, contentTop + rowHeight, 0xFFD0D0D0, false);
         }
 
         for (RowText row : rowText) {
             int x = row.xOverride >= 0 ? row.xOverride : panelLeft;
-            int labelColor = row.locked ? 0xB8B8B8 : 0xFFFFFF;
+            int labelColor = row.locked ? 0xFFB8B8B8 : 0xFFFFFFFF;
             int labelY = row.y + (compactLayout ? 7 : 2);
             graphics.drawString(this.font, row.label, x, labelY, labelColor, false);
             if (!compactLayout && !row.description.isBlank()) {
-                graphics.drawString(this.font, row.description, x, row.y + 15, 0xC0C0C0, false);
+                graphics.drawString(this.font, row.description, x, row.y + 15, 0xFFC0C0C0, false);
             }
         }
     }

@@ -45,6 +45,31 @@ public final class AutumnColorizer {
         );
     }
 
+    /**
+     * Compatibility path for older Distant Horizons API implementations.
+     * That API exposes the finished LOD color but not the separate untinted block-texture sample.
+     * Convert the existing LOD color to neutral luminance before applying the autumn tint so the
+     * original green biome tint does not muddy the result.
+     */
+    public static int colorForDistantHorizonsLegacy(
+            BlockState state,
+            BlockPos pos,
+            int originalColor,
+            String biomeSerial
+    ) {
+        if (state == null || pos == null) {
+            return originalColor;
+        }
+        int neutralBase = neutralLuminanceBase(normalizeArgb(originalColor));
+        return colorInternalDistantHorizons(
+                state,
+                pos,
+                originalColor,
+                neutralBase,
+                VegetationClassifier.isTropicalBiomeSerial(biomeSerial)
+        );
+    }
+
     private static int colorInternal(
             BlockState state,
             BlockPos pos,
@@ -81,7 +106,7 @@ public final class AutumnColorizer {
             return originalColor;
         }
 
-        // 1.21.1 expects ARGB. -1 is opaque white/no tint. Some older mod color handlers
+        // Minecraft 1.21.8 expects ARGB. -1 is opaque white/no tint. Some older mod color handlers
         // still return 24-bit RGB, so normalize those to opaque before blending.
         int base = normalizeArgb(originalColor);
         int target = AutumnPalette.target(type, state, pos);
@@ -159,6 +184,20 @@ public final class AutumnColorizer {
             case DECIDUOUS_LEAVES, TROPICAL, SAPLING, VINE_SHRUB -> true;
             default -> false;
         };
+    }
+
+    private static int neutralLuminanceBase(int color) {
+        int a = (color >>> 24) & 0xFF;
+        int r = (color >>> 16) & 0xFF;
+        int g = (color >>> 8) & 0xFF;
+        int b = color & 0xFF;
+
+        // Rec. 709 luminance. A small lift compensates for the fact that DH's finished color may
+        // already include biome tint and shading. Keeping this neutral preserves LOD texture/light
+        // variation without carrying the original green hue into the autumn palette.
+        int luma = (int) Math.round(0.2126 * r + 0.7152 * g + 0.0722 * b);
+        int neutral = Math.max(0, Math.min(255, (int) Math.round(luma * 1.12)));
+        return (a << 24) | (neutral << 16) | (neutral << 8) | neutral;
     }
 
     private static int multiplyArgb(int base, int tint) {

@@ -4,7 +4,7 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="autumnfoliage"
-version="0.1.0-alpha.9.5"
+version="1.0.0"
 displayName="Autumn Foliage"
 displayTest="IGNORE_ALL_VERSION"
 description='''
@@ -17,20 +17,20 @@ file="META-INF/accesstransformer.cfg"
 [[dependencies.autumnfoliage]]
 modId="neoforge"
 type="required"
-versionRange="[21.1.1,21.2)"
+versionRange="${neo_version_range}"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.autumnfoliage]]
 modId="minecraft"
 type="required"
-versionRange="[1.21.1]"
+versionRange="[1.21.8]"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.autumnfoliage]]
 modId="distanthorizons"
 type="optional"
-versionRange="[3.3.1,)"
+versionRange="${dh_version_range}"
 ordering="NONE"
 side="CLIENT"

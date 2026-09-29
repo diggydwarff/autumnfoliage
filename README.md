@@ -1,18 +1,20 @@
 # Autumn Foliage
 
-Autumn Foliage is a NeoForge 1.21.1 client-side vegetation renderer that applies autumn colors dynamically to vanilla and modded foliage while preserving the original block textures and models.
+Autumn Foliage is a NeoForge 1.21.8 client-side vegetation renderer that applies autumn colors dynamically to vanilla and modded foliage while preserving the original block textures and models.
 
 It was developed using the supplied **Autumnpack 3.0** resource pack as a visual reference, but replaces per-texture compatibility work with runtime vegetation detection, configurable color treatment, coordinate regions and optional server policy.
 
 
 ## Compatibility
 
-- **Minecraft:** 1.21.1
-- **NeoForge:** any stable **21.1.x** release, from **21.1.1** up to (but not including) 21.2
+- **Minecraft:** 1.21.8
+- **NeoForge:** **21.8.x** for Minecraft 1.21.8 (development target: **21.8.54**)
 - **Java:** 21
-- **Distant Horizons:** optional; DH-specific recoloring is enabled when a compatible DH 3.3.1+ build is present
+- **Distant Horizons:** optional; supported/tested with DH 3.3.2+ for Minecraft 1.21.8
 
-The development environment intentionally targets NeoForge **21.1.247**, while the shipped mod metadata uses the broader `[21.1.1,21.2)` runtime range. The development patch version therefore does not become the minimum required version for users. NeoForge's versioning maps the `21.1.x` line to Minecraft 1.21.1, and the upper bound prevents the mod from claiming compatibility with later Minecraft patch lines.
+The 1.21.8 port is developed against NeoForge **21.8.54**, but the packaged compatibility range covers the full Minecraft 1.21.8 NeoForge line (`[21.8.0-beta,21.9)`) rather than requiring one exact loader build. The development target and runtime compatibility range are stored separately so updating the dev loader does not accidentally lock out players on another 21.8.x build. Distant Horizons remains optional. The development client uses **DH 3.3.2 for 1.21.8**. The integration compiles against the standalone DH API 7.1 baseline and uses only public API classes; DH 3.3.2 ships the newer API 7.2 line while retaining the API surface used here.
+
+For release checks, `scripts/test-neoforge-compat.ps1` compiles the same source against 21.8.0-beta, 21.8.9 (the first non-beta 21.8 build), and 21.8.54. This is a compatibility smoke test; normal development still uses the single `neo_version` target in `gradle.properties`.
 
 ## Features
 
@@ -30,7 +32,7 @@ The development environment intentionally targets NeoForge **21.1.247**, while t
 - Optional server installation can enforce world climate/appearance settings while selectively allowing client overrides.
 - Native Distant Horizons LOD recoloring so distant foliage follows the same autumn system.
 - Distant Horizons is included only in the development `runClient` environment and is not an end-user dependency.
-- Custom item renderers are left untouched. Autumn Foliage only wraps block-state models for untinted-vegetation fallback, avoiding conflicts with mods such as Create that require their item models to retain a specific baked-model class.
+- Custom item renderers are left untouched. Autumn Foliage only wraps block-state models/model parts for untinted-vegetation fallback, avoiding conflicts with mods such as Create that depend on their own item rendering implementations.
 
 ## In-game settings
 
@@ -152,9 +154,13 @@ Patch Size:      10 blocks
 
 Distant Horizons is optional. When present, Autumn Foliage registers a DH block-color override for detected vegetation so LOD foliage uses the same coordinate zones, tropical policy, category strengths and deterministic palette as nearby chunks.
 
-The DH integration uses DH's representative untinted block color and applies the autumn tint through a path designed to resemble normal Minecraft/Sodium leaf tinting. This keeps the transition between nearby rendered chunks and distant LOD terrain substantially more consistent.
+For the supported DH 3.3.2+ line, Autumn Foliage uses DH's representative untinted block color directly when available, giving LOD foliage the closest match to Minecraft's normal texture-and-tint path. A legacy fallback remains in the code for older API implementations, but DH 3.3.2+ is the supported 1.21.8 runtime combination.
 
 Changing Autumn Foliage settings asks Distant Horizons to rebuild its visible render-data cache so already-generated green LODs do not remain on screen. The underlying DH terrain/full-data database is not deleted.
+
+### NeoForge development client note
+
+NeoForge 1.21.8 enables its Blaze3D validation wrapper in development. Distant Horizons accesses the backing OpenGL texture implementation directly, so a `runClient` session can otherwise crash when DH receives NeoForge's `ValidationGpuTexture` wrapper instead of `GlTexture`. The Gradle `runClient` task therefore depends on `prepareNeoForgeClientConfig`, which ensures `run/config/neoforge-client.toml` contains `enableB3DValidationLayer = false` before launch. This only affects the local development runtime; it is not packaged into the mod jar.
 
 ## Configuration files
 

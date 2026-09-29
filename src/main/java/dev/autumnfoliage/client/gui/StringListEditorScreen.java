@@ -191,14 +191,14 @@ final class StringListEditorScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        // Background/blur is already submitted by Screen's 1.21.8 render pipeline.
         graphics.fill(panelLeft - 8, 66, panelRight + 8, this.height - 40, 0x50000000);
         super.render(graphics, mouseX, mouseY, partialTick);
 
         // Keep labels above the blurred background/widget pass so they remain crisp at every GUI scale.
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, 16, 0xFFFFFF);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, 16, 0xFFFFFFFF);
         if (this.height >= 260) {
-            graphics.drawCenteredString(this.font, kind.description, this.width / 2, 34, 0xD0D0D0);
+            graphics.drawCenteredString(this.font, kind.description, this.width / 2, 34, 0xFFD0D0D0);
         }
 
         int start = page * rowsPerPage;
@@ -206,18 +206,18 @@ final class StringListEditorScreen extends Screen {
         int y = 76;
         for (int index = start; index < end; index++) {
             graphics.drawString(this.font, Integer.toString(index + 1), panelLeft + 6,
-                    y + (index - start) * 28 + 6, 0xB8B8B8, false);
+                    y + (index - start) * 28 + 6, 0xFFB8B8B8, false);
         }
 
         if (items.isEmpty()) {
-            graphics.drawCenteredString(this.font, "No entries. Click Add to create one.", this.width / 2, 92, 0xB8B8B8);
+            graphics.drawCenteredString(this.font, "No entries. Click Add to create one.", this.width / 2, 92, 0xFFB8B8B8);
         }
 
         String pageText = "Page " + (page + 1) + " / " + pageCount() + "  -  " + items.size() + " entries";
-        graphics.drawCenteredString(this.font, pageText, this.width / 2, this.height - 72, 0xB8B8B8);
+        graphics.drawCenteredString(this.font, pageText, this.width / 2, this.height - 72, 0xFFB8B8B8);
 
         if (!validationMessage.isBlank()) {
-            graphics.drawCenteredString(this.font, validationMessage, this.width / 2, 52, 0xE06C75);
+            graphics.drawCenteredString(this.font, validationMessage, this.width / 2, 52, 0xFFE06C75);
         }
     }
 }

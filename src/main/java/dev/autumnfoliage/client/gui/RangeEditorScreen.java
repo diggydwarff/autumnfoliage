@@ -113,7 +113,7 @@ final class RangeEditorScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        // Background/blur is already submitted by Screen's 1.21.8 render pipeline.
         boolean compact = this.height < 260;
 
         graphics.fill(left - 8, compact ? 56 : 66, this.width - left + 8, this.height - 40, 0x50000000);
@@ -121,25 +121,25 @@ final class RangeEditorScreen extends Screen {
 
         // Foreground text intentionally comes after widget rendering; otherwise Minecraft's blurred
         // menu background can make these labels look like part of the world behind the screen.
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, compact ? 14 : 20, 0xFFFFFF);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, compact ? 14 : 20, 0xFFFFFFFF);
         graphics.drawCenteredString(this.font,
                 "World " + axis.name() + " coordinate range",
-                this.width / 2, compact ? 30 : 38, 0xD0D0D0);
+                this.width / 2, compact ? 30 : 38, 0xFFD0D0D0);
 
         int y = compact ? 66 : 78;
         int rowGap = compact ? 32 : 38;
-        graphics.drawString(this.font, "Start", left, y + 5, 0xFFFFFF, false);
-        graphics.drawString(this.font, "End", left, y + rowGap + 5, 0xFFFFFF, false);
-        graphics.drawString(this.font, "Fade Distance", left, y + rowGap * 2 + 5, 0xFFFFFF, false);
+        graphics.drawString(this.font, "Start", left, y + 5, 0xFFFFFFFF, false);
+        graphics.drawString(this.font, "End", left, y + rowGap + 5, 0xFFFFFFFF, false);
+        graphics.drawString(this.font, "Fade Distance", left, y + rowGap * 2 + 5, 0xFFFFFFFF, false);
 
         if (!compact) {
-            graphics.drawString(this.font, "First coordinate at full autumn strength.", left, y + 18, 0xC0C0C0, false);
-            graphics.drawString(this.font, "Last coordinate at full autumn strength.", left, y + rowGap + 18, 0xC0C0C0, false);
-            graphics.drawString(this.font, "Blocks used to blend smoothly back to normal foliage.", left, y + rowGap * 2 + 18, 0xC0C0C0, false);
+            graphics.drawString(this.font, "First coordinate at full autumn strength.", left, y + 18, 0xFFC0C0C0, false);
+            graphics.drawString(this.font, "Last coordinate at full autumn strength.", left, y + rowGap + 18, 0xFFC0C0C0, false);
+            graphics.drawString(this.font, "Blocks used to blend smoothly back to normal foliage.", left, y + rowGap * 2 + 18, 0xFFC0C0C0, false);
         }
 
         if (!validationMessage.isBlank()) {
-            graphics.drawCenteredString(this.font, validationMessage, this.width / 2, this.height - 47, 0xE06C75);
+            graphics.drawCenteredString(this.font, validationMessage, this.width / 2, this.height - 47, 0xFFE06C75);
         }
     }
 }
