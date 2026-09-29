@@ -162,6 +162,80 @@ public final class AutumnConfig {
         return runtime;
     }
 
+    public static ClientConfigSnapshot clientSnapshot() {
+        return new ClientConfigSnapshot(
+                ENABLED.get(),
+                AXIS.get(),
+                localZoneSnapshot().ranges(),
+                FORCE_TINT_UNTINTED.get(),
+                LEAF_STRENGTH.get(),
+                FOLIAGE_VIBRANCY.get(),
+                FOLIAGE_BRIGHTNESS.get(),
+                SAPLING_STRENGTH.get(),
+                GRASS_STRENGTH.get(),
+                VINE_SHRUB_STRENGTH.get(),
+                EVERGREEN_STRENGTH.get(),
+                AUTUMNAL_TROPICS.get(),
+                COLOR_PATCH_SIZE.get(),
+                copyStrings(FORCE_INCLUDE.get()),
+                copyStrings(FORCE_EXCLUDE.get()),
+                copyStrings(EVERGREEN_KEYWORDS.get()),
+                copyStrings(TROPICAL_KEYWORDS.get()),
+                copyStrings(TROPICAL_BIOME_KEYWORDS.get())
+        );
+    }
+
+    public static ClientConfigSnapshot defaultSnapshot() {
+        List<AutumnRange> defaultRanges = new ArrayList<>();
+        for (String raw : copyStrings(RANGES.getDefault())) {
+            parseRange(raw).ifPresent(defaultRanges::add);
+        }
+        return new ClientConfigSnapshot(
+                ENABLED.getDefault(),
+                AXIS.getDefault(),
+                List.copyOf(defaultRanges),
+                FORCE_TINT_UNTINTED.getDefault(),
+                LEAF_STRENGTH.getDefault(),
+                FOLIAGE_VIBRANCY.getDefault(),
+                FOLIAGE_BRIGHTNESS.getDefault(),
+                SAPLING_STRENGTH.getDefault(),
+                GRASS_STRENGTH.getDefault(),
+                VINE_SHRUB_STRENGTH.getDefault(),
+                EVERGREEN_STRENGTH.getDefault(),
+                AUTUMNAL_TROPICS.getDefault(),
+                COLOR_PATCH_SIZE.getDefault(),
+                copyStrings(FORCE_INCLUDE.getDefault()),
+                copyStrings(FORCE_EXCLUDE.getDefault()),
+                copyStrings(EVERGREEN_KEYWORDS.getDefault()),
+                copyStrings(TROPICAL_KEYWORDS.getDefault()),
+                copyStrings(TROPICAL_BIOME_KEYWORDS.getDefault())
+        );
+    }
+
+    public static void applyClientSnapshot(ClientConfigSnapshot snapshot) {
+        ENABLED.set(snapshot.enabled());
+        AXIS.set(snapshot.axis());
+        RANGES.set(snapshot.ranges().stream()
+                .map(r -> r.min() + "," + r.max() + "," + r.fadeDistance())
+                .toList());
+        FORCE_TINT_UNTINTED.set(snapshot.forceTintUntintedModels());
+        LEAF_STRENGTH.set(snapshot.leafStrength());
+        FOLIAGE_VIBRANCY.set(snapshot.foliageVibrancy());
+        FOLIAGE_BRIGHTNESS.set(snapshot.foliageBrightness());
+        SAPLING_STRENGTH.set(snapshot.saplingStrength());
+        GRASS_STRENGTH.set(snapshot.grassStrength());
+        VINE_SHRUB_STRENGTH.set(snapshot.vineAndShrubStrength());
+        EVERGREEN_STRENGTH.set(snapshot.evergreenStrength());
+        AUTUMNAL_TROPICS.set(snapshot.autumnalTropics());
+        COLOR_PATCH_SIZE.set(snapshot.colorPatchSize());
+        FORCE_INCLUDE.set(List.copyOf(snapshot.forceInclude()));
+        FORCE_EXCLUDE.set(List.copyOf(snapshot.forceExclude()));
+        EVERGREEN_KEYWORDS.set(List.copyOf(snapshot.evergreenKeywords()));
+        TROPICAL_KEYWORDS.set(List.copyOf(snapshot.tropicalKeywords()));
+        TROPICAL_BIOME_KEYWORDS.set(List.copyOf(snapshot.tropicalBiomeKeywords()));
+        SPEC.save();
+    }
+
     public static void refresh() {
         ZoneSettings localZones = localZoneSnapshot();
         AppearanceSettings localAppearance = localAppearanceSnapshot();
@@ -261,6 +335,11 @@ public final class AutumnConfig {
 
     private static boolean isSimpleString(Object value) {
         return value instanceof String s && !s.isBlank();
+    }
+
+
+    private static List<String> copyStrings(List<? extends String> values) {
+        return values.stream().map(String::valueOf).toList();
     }
 
     private static Set<String> normalizedSet(List<? extends String> values) {

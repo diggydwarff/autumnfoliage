@@ -1,65 +1,100 @@
 # Autumn Foliage
 
-Autumn Foliage is a NeoForge 1.21.1 vegetation renderer that applies autumn colors dynamically to vanilla and modded foliage while preserving the original block textures and models.
+Autumn Foliage is a NeoForge 1.21.1 client-side vegetation renderer that applies autumn colors dynamically to vanilla and modded foliage while preserving the original block textures and models.
 
-It was designed from the supplied **Autumnpack 3.0** resource pack as a visual reference, but replaces per-texture compatibility work with broad runtime vegetation detection and tinting.
+It was developed using the supplied **Autumnpack 3.0** resource pack as a visual reference, but replaces per-texture compatibility work with runtime vegetation detection, configurable color treatment, coordinate regions and optional server policy.
 
-## Main features
+## Features
 
-- Dynamic autumn colors for vanilla and modded vegetation.
-- Detects leaves through vanilla tags/classes plus mod-friendly naming fallbacks.
-- Covers leaves, saplings, grass/ferns, vines, shrubs and other common vegetation.
-- Species-aware red/orange/gold palette families plus deterministic world-space patch variation, with controlled cross-family variation so even single-species forests do not collapse into one color.
-- Birch/aspen/poplar-like trees favor vivid golds, maple/acacia-like trees favor reds, oak/beech-like trees favor oranges, and unknown modded species receive a stable family automatically.
-- Adjustable foliage vibrancy and brightness, with stronger high-chroma defaults and gamma-based midtone lifting intended to survive multiplication against dark leaf textures.
-- Obvious conifers remain mostly green by default.
-- Tropical/jungle vegetation can remain lush or be made autumnal with one setting.
+- Dynamic autumn coloring for vanilla and modded vegetation.
+- Broad leaf/vegetation detection through tags, block classes and mod-friendly naming fallbacks.
+- Covers leaves, saplings, grass/ferns, vines, shrubs and other common foliage.
+- Species-aware red, orange and gold palette families with deterministic world-space variation.
+- Brightness and vibrancy controls designed to remain colorful even on dark modded leaf textures.
+- Conifers stay mostly green by default.
+- Tropical/jungle vegetation can remain green or become autumnal.
 - Optional coordinate ranges with smooth fade distances.
-- Any number of coordinate ranges is supported; an empty range list means autumn everywhere.
-- Client installation is sufficient; the server does not require the mod.
-- If the server also installs the mod, it can provide world-wide policy to clients that have Autumn Foliage.
-- Native Distant Horizons LOD recoloring through the DH API, so distant forests use the same autumn treatment as nearby chunks.
-- Distant Horizons is included as a development-only `runClient` dependency for compatibility testing; it is not bundled or required by Autumn Foliage.
+- Any number of coordinate ranges is supported; no ranges means autumn applies everywhere.
+- Client-only installation is supported; the server does not require the mod.
+- Optional server installation can enforce world climate/appearance settings while selectively allowing client overrides.
+- Native Distant Horizons LOD recoloring so distant foliage follows the same autumn system.
+- Distant Horizons is included only in the development `runClient` environment and is not an end-user dependency.
 
-## In-game configuration
+## In-game settings
 
-Open **Mods -> Autumn Foliage -> Config**. NeoForge's built-in configuration screen exposes the client configuration and, where permitted, the current world's server configuration. Changes are picked up by Autumn Foliage and trigger a chunk render refresh; no Minecraft restart is intended for normal visual settings.
+Open **Mods -> Autumn Foliage -> Config**.
 
-The coordinate range list uses:
+The mod uses a purpose-built settings screen rather than exposing raw TOML-style values. Normal options are presented as toggles, sliders and focused editors, with the layout adapting to smaller GUI heights so controls do not overlap the footer. Settings are rendered over a subtle dark content panel and foreground labels are drawn after Minecraft's blurred menu pass so text stays crisp and readable at different GUI scales.
+
+The screen is divided into five simple tabs. **Save & Close** commits the draft and refreshes nearby chunks and Distant Horizons render data immediately; **Cancel** discards unsaved changes. On smaller GUI heights, descriptions are condensed so the controls remain usable without overlapping.
+
+### General
+
+- **Autumn Effect** - master on/off switch.
+- **Autumnal Tropics** - controls whether jungle/rainforest/tropical vegetation also receives autumn colors.
+- **Coverage** - shows whether autumn currently applies to the whole world or configured coordinate ranges.
+
+### Colors
+
+- **Vibrancy** - saturation of autumn reds, oranges and yellows.
+- **Brightness** - midtone lift for foliage colors.
+- **Color Patch Size** - approximate size of neighboring foliage patches that share a similar color family.
+
+### Plants
+
+Separate strength sliders are provided for:
+
+- leaves
+- saplings
+- grass and ferns
+- vines and shrubs
+- evergreens
+
+All strengths are shown as percentages instead of raw decimal values.
+
+### Regions
+
+Coordinate ranges are edited visually; there is no need to type `min,max,fadeDistance` strings in the normal GUI.
+
+Each range has:
+
+- start coordinate
+- end coordinate
+- fade distance
+
+The axis can be switched between **X** and **Z**. Any number of ranges can be added. Removing every range returns to the default whole-world behavior.
+
+Example conceptually:
 
 ```text
-min,max,fadeDistance
+Range 1: -18,000 to -9,000 | fade 1,500
+Range 2:   7,000 to 16,000 | fade 1,500
 ```
 
-Example:
+Inside each range the effect is full strength. The fade distance smoothly blends vegetation back to normal outside the range edges.
 
-```text
--18000,-9000,1500
-7000,16000,1500
-```
+### Advanced
 
-With `ranges = []`, autumn applies to the entire world.
+Compatibility-oriented values are kept out of the normal appearance pages:
 
-## Tropical vegetation
+- tint otherwise untinted modded vegetation
+- force-included block IDs
+- force-excluded block IDs
+- evergreen keywords
+- tropical block keywords
+- tropical biome keywords
 
-`autumnalTropics = false` is the default. Tropical blocks and vegetation inside jungle/rainforest-like biomes remain green. Set it to `true` for autumnal tropical vegetation as well.
+Lists use dedicated one-entry-per-row editors with clear Add/Remove controls, validation, page indicators and a reset-to-default button.
 
-Detection is configurable through tropical block and biome keyword lists.
+## Server-controlled settings
 
-## Optional server policy
+The server mod is optional.
 
-The server mod is optional. If absent, the client uses its local configuration normally.
+If the server does not have Autumn Foliage installed, all settings come from the local client configuration.
 
-If the server has Autumn Foliage installed, its synced server config can provide:
+If the server does have the mod installed, it can make some settings authoritative. In the in-game client GUI, authoritative values are shown directly and their controls are disabled with a `Server:` label rather than leaving the player guessing why a local value is not taking effect.
 
-- master autumn enabled state
-- coordinate axis and autumn ranges
-- autumnal tropical policy
-- leaf/sapling/grass/vine/evergreen strengths
-- foliage vibrancy and brightness
-- color patch size
-
-The server can selectively allow client overrides:
+The server can independently choose whether clients may override:
 
 ```toml
 [clientOverrides]
@@ -69,18 +104,51 @@ allowClientTropicalOverride = false
 allowClientAppearanceOverride = true
 ```
 
-For example, a server can enforce its climate/coordinate bands while setting `allowClientTropicalOverride = true` so each player decides whether jungle vegetation becomes autumnal.
+This allows setups such as:
 
-Client-only compatibility values such as force-included/excluded blocks and tint-model workarounds always remain local because different clients may use different rendering or vegetation mods.
+- server controls the world coordinate bands
+- server controls whether autumn is enabled
+- each client chooses whether tropical vegetation becomes autumnal
+- each client chooses its own appearance intensity
+
+Compatibility values such as force-includes/excludes remain client-local because different players may use different rendering and vegetation mods.
+
+Dedicated server policy is stored in `autumnfoliage-server.toml`. The client settings screen intentionally does not pretend a remote player can edit server-owned policy.
+
+## Default behavior
+
+With no coordinate ranges configured, autumn applies across the entire world.
+
+`autumnalTropics = false` by default, so tropical vegetation remains green unless explicitly enabled.
+
+Current default appearance values are:
+
+```text
+Vibrancy:       135%
+Brightness:     120%
+Leaves:         100%
+Saplings:        90%
+Grass/Ferns:     46%
+Vines/Shrubs:    72%
+Evergreens:      10%
+Patch Size:      10 blocks
+```
 
 ## Distant Horizons
 
-Distant Horizons is optional. When it is installed, Autumn Foliage registers a DH block-color override for detected vegetation so LOD foliage uses the same coordinate zones, tropical policy, category strengths and deterministic palette as normal Minecraft chunks.
+Distant Horizons is optional. When present, Autumn Foliage registers a DH block-color override for detected vegetation so LOD foliage uses the same coordinate zones, tropical policy, category strengths and deterministic palette as nearby chunks.
 
-DH exposes both its finished LOD color and the untinted representative base color sampled from the block texture. Alpha.8 now rebuilds the DH autumn result from that base color multiplied by the same autumn tint used by normal Minecraft/Sodium rendering. This mirrors the near-chunk tint pipeline instead of painting DH foliage with a flat final palette color, which greatly reduces the bright-LOD/dull-near-chunk handoff while retaining the same red/orange/gold selection.
+The DH integration uses DH's representative untinted block color and applies the autumn tint through a path designed to resemble normal Minecraft/Sodium leaf tinting. This keeps the transition between nearby rendered chunks and distant LOD terrain substantially more consistent.
 
-Changing Autumn Foliage settings also asks Distant Horizons to clear and regenerate its render-data cache. This is intentional: otherwise already-built green LOD buffers can remain visible after the nearby vanilla chunks have changed color. The underlying DH terrain/database data is not deleted.
+Changing Autumn Foliage settings asks Distant Horizons to rebuild its visible render-data cache so already-generated green LODs do not remain on screen. The underlying DH terrain/full-data database is not deleted.
+
+## Configuration files
+
+The GUI is the recommended way to change client settings, but the underlying files remain normal NeoForge TOML configs:
+
+- `autumnfoliage-client.toml` - local appearance, regions and compatibility settings
+- `autumnfoliage-server.toml` - optional server policy and client-override permissions
 
 ## Notes
 
-The mod only changes rendering. It does not replace blocks, modify biomes, or write seasonal state into the world save.
+Autumn Foliage is a rendering mod. It does not replace blocks, modify biomes, change world generation or write seasonal state into the save.
