@@ -67,20 +67,36 @@ public final class DistantHorizonsCompat {
                         }
 
                         IDhApiBiomeWrapper biome = value.getBiomeWrapper();
-                        String biomeSerial = biome == null ? "" : biome.getSerialString();
+                        String biomeSerial = biomeNameCompat(biome);
                         BlockPos pos = new BlockPos(
                                 value.getBlockPosX(),
                                 value.getBlockPosY(),
                                 value.getBlockPosZ()
                         );
 
-                        int recolored = AutumnColorizer.colorForDistantHorizons(
-                                state,
-                                pos,
-                                value.getColorAsInt(),
-                                value.getBaseColorAsInt(),
-                                biomeSerial
-                        );
+                        int originalColor = value.getColorAsInt();
+                        int recolored;
+                        try {
+                            // DH API 7.1+ exposes the untinted texture/base sample. Using it gives
+                            // the closest match to Minecraft/Sodium's normal texture * tint path.
+                            recolored = AutumnColorizer.colorForDistantHorizons(
+                                    state,
+                                    pos,
+                                    originalColor,
+                                    value.getBaseColorAsInt(),
+                                    biomeSerial
+                            );
+                        } catch (NoSuchMethodError | AbstractMethodError ignored) {
+                            // DH 3.2.x / API 7.0.x does not expose getBaseColorAsInt(). Keep the
+                            // integration working with a luminance-preserving approximation rather
+                            // than disabling autumn LOD colors entirely.
+                            recolored = AutumnColorizer.colorForDistantHorizonsLegacy(
+                                    state,
+                                    pos,
+                                    originalColor,
+                                    biomeSerial
+                            );
+                        }
 
                         if (recolored != value.getColorAsInt()) {
                             value.setColor(
@@ -112,6 +128,22 @@ public final class DistantHorizonsCompat {
     public static void refreshRenderData() {
         if (DhApi.Delayed.renderProxy != null) {
             DhApi.Delayed.renderProxy.clearRenderDataCache();
+        }
+    }
+
+    private static String biomeNameCompat(IDhApiBiomeWrapper biome) {
+        if (biome == null) {
+            return "";
+        }
+        try {
+            // Added by DH API 7.1.0. It normally contains the namespace/path and is the most
+            // reliable input for our tropical-biome keyword matcher.
+            return biome.getSerialString();
+        } catch (NoSuchMethodError | AbstractMethodError ignored) {
+            // DH API 7.0.x only exposes getName(). This is still sufficient for names such as
+            // jungle/rainforest/tropical and keeps 1.21.4 DH 3.2.x compatible.
+            String name = biome.getName();
+            return name == null ? "" : name;
         }
     }
 

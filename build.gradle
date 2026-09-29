@@ -66,12 +66,13 @@ configurations {
 }
 
 dependencies {
-    // Compile against the DH API when present, but do not make it a runtime dependency for users.
-    compileOnly "maven.modrinth:uCdwusMi:IcOcoekl"
+    // Compile against current DH 1.21.4 API. The integration contains runtime fallbacks for
+    // DH 3.2.x / API 7.0.x, where getSerialString() and getBaseColorAsInt() did not yet exist.
+    compileOnly "maven.modrinth:uCdwusMi:t08qeDio"
 
-    // Development/runtime only: always include Distant Horizons in runClient compatibility tests.
+    // Development/runtime only: test against current DH 3.3.2 for Minecraft 1.21.4.
     // This is not packaged into Autumn Foliage and is not a required end-user dependency.
-    localRuntime "maven.modrinth:uCdwusMi:IcOcoekl"
+    localRuntime "maven.modrinth:uCdwusMi:t08qeDio"
 }
 
 tasks.withType(JavaCompile).configureEach {

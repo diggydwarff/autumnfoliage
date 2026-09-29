@@ -31,7 +31,7 @@ public final class DistantHorizonsBridge {
                 type.getMethod("init").invoke(null);
                 refreshMethod = type.getMethod("refreshRenderData");
                 initialized = true;
-            } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
+            } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | LinkageError ignored) {
                 // DH is optional. If its API changes incompatibly, vanilla rendering still works.
             }
         }
@@ -47,7 +47,7 @@ public final class DistantHorizonsBridge {
         }
         try {
             method.invoke(null);
-        } catch (IllegalAccessException | InvocationTargetException ignored) {
+        } catch (IllegalAccessException | InvocationTargetException | LinkageError ignored) {
             // Never let an optional compatibility refresh break the client.
         }
     }

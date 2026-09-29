@@ -7,7 +7,7 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.client.model.BakedModelWrapper;
+import net.minecraft.client.resources.model.DelegateBakedModel;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,17 +16,17 @@ import java.util.List;
 
 /**
  * Makes otherwise-untinted vegetation quads participate in the standard BlockColor pipeline.
- * Because the decision is based on the runtime BlockState, all baked models can be wrapped safely;
- * non-vegetation and item renders are returned untouched.
+ * This wrapper is installed only on the block-state model map. The runtime BlockState then decides
+ * whether a quad needs forced tinting; non-vegetation block models are returned untouched.
  */
-public final class TintForcingBakedModel extends BakedModelWrapper<BakedModel> {
+public final class TintForcingBakedModel extends DelegateBakedModel {
     public TintForcingBakedModel(BakedModel originalModel) {
         super(originalModel);
     }
 
     @Override
     public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand) {
-        List<BakedQuad> quads = originalModel.getQuads(state, side, rand);
+        List<BakedQuad> quads = parent.getQuads(state, side, rand);
         return maybeForceTint(state, quads);
     }
 
@@ -38,7 +38,7 @@ public final class TintForcingBakedModel extends BakedModelWrapper<BakedModel> {
             ModelData extraData,
             @Nullable RenderType renderType
     ) {
-        List<BakedQuad> quads = originalModel.getQuads(state, side, rand, extraData, renderType);
+        List<BakedQuad> quads = parent.getQuads(state, side, rand, extraData, renderType);
         return maybeForceTint(state, quads);
     }
 
@@ -74,7 +74,7 @@ public final class TintForcingBakedModel extends BakedModelWrapper<BakedModel> {
                         quad.getDirection(),
                         quad.getSprite(),
                         quad.isShade(),
-                        quad.hasAmbientOcclusion()
+                        quad.getLightEmission()
                 ));
             }
         }

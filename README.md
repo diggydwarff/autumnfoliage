@@ -1,18 +1,18 @@
 # Autumn Foliage
 
-Autumn Foliage is a NeoForge 1.21.1 client-side vegetation renderer that applies autumn colors dynamically to vanilla and modded foliage while preserving the original block textures and models.
+Autumn Foliage is a NeoForge 1.21.4 client-side vegetation renderer that applies autumn colors dynamically to vanilla and modded foliage while preserving the original block textures and models.
 
 It was developed using the supplied **Autumnpack 3.0** resource pack as a visual reference, but replaces per-texture compatibility work with runtime vegetation detection, configurable color treatment, coordinate regions and optional server policy.
 
 
 ## Compatibility
 
-- **Minecraft:** 1.21.1
-- **NeoForge:** any stable **21.1.x** release, from **21.1.1** up to (but not including) 21.2
+- **Minecraft:** 1.21.4
+- **NeoForge:** **21.4.x** for Minecraft 1.21.4 (development target: **21.4.157**)
 - **Java:** 21
-- **Distant Horizons:** optional; DH-specific recoloring is enabled when a compatible DH 3.3.1+ build is present
+- **Distant Horizons:** optional; supports the 1.21.4 DH 3.2.x API and newer 3.3.x builds
 
-The development environment intentionally targets NeoForge **21.1.247**, while the shipped mod metadata uses the broader `[21.1.1,21.2)` runtime range. The development patch version therefore does not become the minimum required version for users. NeoForge's versioning maps the `21.1.x` line to Minecraft 1.21.1, and the upper bound prevents the mod from claiming compatibility with later Minecraft patch lines.
+The 1.21.4 port is built against NeoForge **21.4.157** and declares the Minecraft 1.21.4 NeoForge line (`[21.4.0-beta,21.5)`). Distant Horizons remains optional. The development client currently runs with **DH 3.3.2 for 1.21.4**, while the integration retains a fallback for the older DH 3.2.x / API 7.0.x color API.
 
 ## Features
 
@@ -152,7 +152,9 @@ Patch Size:      10 blocks
 
 Distant Horizons is optional. When present, Autumn Foliage registers a DH block-color override for detected vegetation so LOD foliage uses the same coordinate zones, tropical policy, category strengths and deterministic palette as nearby chunks.
 
-The DH integration uses DH's representative untinted block color and applies the autumn tint through a path designed to resemble normal Minecraft/Sodium leaf tinting. This keeps the transition between nearby rendered chunks and distant LOD terrain substantially more consistent.
+On current DH 3.3.x builds, the integration uses DH's representative untinted block color and applies the autumn tint through a path designed to resemble normal Minecraft/Sodium leaf tinting. This keeps the transition between nearby rendered chunks and distant LOD terrain substantially more consistent.
+
+DH 3.2.x uses the older API 7.0.x and does not expose that separate base-color sample. Autumn Foliage therefore falls back to a luminance-preserving neutral base derived from DH's existing LOD color, keeping autumn LODs functional without carrying the original green tint into the new palette.
 
 Changing Autumn Foliage settings asks Distant Horizons to rebuild its visible render-data cache so already-generated green LODs do not remain on screen. The underlying DH terrain/full-data database is not deleted.
 
