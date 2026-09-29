@@ -4,32 +4,33 @@ import dev.autumnfoliage.config.AutumnConfig;
 import net.minecraft.core.BlockPos;
 
 /**
- * Palette sampled from the supplied Autumnpack 3.0 reference pack:
- * golden foliage (#F0AE21), birch ambers (#C97C00/#DF8A00),
- * oak oranges/rusts (#D58039/#B36426/#9B541E), and dark red foliage (#A11A1A/#851616).
- *
- * Colors are stored as opaque ARGB, matching the 1.21.1 BlockColor contract.
+ * Bright autumn palette based on the supplied Autumnpack 3.0 reference. The alpha.2 palette
+ * intentionally favors saturated red, orange, amber and gold over brown/rust so dense forests
+ * still read as colorful autumn rather than dead foliage.
+ * Colors are opaque ARGB, matching the 1.21.1 BlockColor contract.
  */
 public final class AutumnPalette {
     private static final int[] LEAF_GRADIENT = {
-            0xFF851616,
-            0xFFA11A1A,
-            0xFF9B541E,
-            0xFFB36426,
-            0xFFD58039,
-            0xFFDF8A00,
-            0xFFF0AE21
+            0xFFB52328,
+            0xFFCB3020,
+            0xFFDE461B,
+            0xFFE95F16,
+            0xFFEF7D16,
+            0xFFF09A19,
+            0xFFF1B321,
+            0xFFEFC63A,
+            0xFFE9D151
     };
 
     private static final int[] GRASS_GRADIENT = {
-            0xFF8D7D28,
-            0xFFA08F2D,
-            0xFFB9B543,
-            0xFFB88427,
-            0xFFA66A1C
+            0xFFA09A35,
+            0xFFB2A63B,
+            0xFFC0B345,
+            0xFFC49A34,
+            0xFFB78128
     };
 
-    private static final int EVERGREEN_AUTUMN = 0xFF7A7B35;
+    private static final int EVERGREEN_AUTUMN = 0xFF7F8E48;
 
     private AutumnPalette() {}
 

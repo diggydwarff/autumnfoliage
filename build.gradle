@@ -20,6 +20,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 neoForge {
     version = project.neo_version
+    validateAccessTransformers = true
 
     parchment {
         mappingsVersion = project.parchment_mappings_version

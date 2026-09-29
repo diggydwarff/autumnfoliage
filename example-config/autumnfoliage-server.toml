@@ -1,0 +1,8 @@
+[zones]
+# Optional server authority. Clients without Autumn Foliage are unaffected.
+enabled = true
+axis = "Z"
+# Empty = autumn everywhere for clients that have the mod.
+ranges = []
+# Example:
+# ranges = ["-18000,-9000,1500", "7000,16000,1500"]

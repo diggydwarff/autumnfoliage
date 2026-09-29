@@ -46,17 +46,18 @@ public final class ClientEvents {
     @SubscribeEvent
     public static void onConfigLoading(ModConfigEvent.Loading event) {
         if (AutumnFoliage.MOD_ID.equals(event.getConfig().getModId())) {
-            AutumnConfig.refresh();
-            VegetationClassifier.clearCache();
+            refreshRendering();
         }
     }
 
     @SubscribeEvent
     public static void onConfigReloading(ModConfigEvent.Reloading event) {
-        if (!AutumnFoliage.MOD_ID.equals(event.getConfig().getModId())) {
-            return;
+        if (AutumnFoliage.MOD_ID.equals(event.getConfig().getModId())) {
+            refreshRendering();
         }
+    }
 
+    public static void refreshRendering() {
         AutumnConfig.refresh();
         VegetationClassifier.clearCache();
         Minecraft minecraft = Minecraft.getInstance();

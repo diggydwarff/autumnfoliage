@@ -23,16 +23,13 @@ public record RuntimeSettings(
         return new RuntimeSettings(
                 true,
                 Axis.Z,
-                List.of(
-                        new AutumnRange(-18000, -9000, 1500),
-                        new AutumnRange(7000, 16000, 1500)
-                ),
+                List.of(),
                 true,
                 1.0,
-                0.85,
-                0.42,
-                0.65,
-                0.12,
+                0.9,
+                0.46,
+                0.72,
+                0.10,
                 10,
                 Set.of(),
                 Set.of(),

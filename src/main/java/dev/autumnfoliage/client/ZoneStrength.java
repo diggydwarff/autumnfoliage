@@ -10,8 +10,13 @@ public final class ZoneStrength {
 
     public static double at(BlockPos pos) {
         RuntimeSettings settings = AutumnConfig.runtime();
-        if (!settings.enabled() || settings.ranges().isEmpty()) {
+        if (!settings.enabled()) {
             return 0.0;
+        }
+        // An empty range list intentionally means "all world". This keeps the default
+        // useful without requiring users to invent giant coordinate bounds.
+        if (settings.ranges().isEmpty()) {
+            return 1.0;
         }
 
         int coordinate = settings.axis().coordinate(pos);

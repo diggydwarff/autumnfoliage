@@ -1,5 +1,6 @@
 package dev.autumnfoliage.config;
 
+import dev.autumnfoliage.network.ServerZoneOverride;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.ArrayList;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+/** Client preferences plus local fallback zones used when the server does not provide a policy. */
 public final class AutumnConfig {
     public static final ModConfigSpec SPEC;
 
@@ -35,22 +37,25 @@ public final class AutumnConfig {
 
         builder.push("zones");
         ENABLED = builder
-                .comment("Master switch for coordinate-aware autumn rendering.")
+                .comment(
+                        "Local fallback zone switch.",
+                        "Used when connected to a multiplayer server that does NOT have Autumn Foliage installed.",
+                        "If the active server has the mod, its world/serverconfig zone policy takes precedence automatically.",
+                        "Single-player has an integrated server, so its per-world server config is authoritative.")
                 .define("enabled", true);
         AXIS = builder
-                .comment("World axis used for the climate bands. Z is the usual north/south setup.")
+                .comment("World axis used for coordinate bands. Z is the usual north/south setup.")
                 .defineEnum("axis", Axis.Z);
         RANGES = builder
                 .comment(
-                        "Autumn-active coordinate ranges. Any number of ranges is supported.",
+                        "Local fallback autumn coordinate ranges. Any number is supported.",
                         "Format: min,max,fadeDistance",
-                        "Inside min..max the effect is full strength. fadeDistance smoothly blends back to normal outside each edge.",
-                        "Overlapping ranges use the strongest effect rather than stacking."
-                )
+                        "An EMPTY list means the entire world is autumn-active.",
+                        "When ranges are present, full autumn applies inside each range and fades smoothly outside its edges.")
                 .defineListAllowEmpty(
                         "ranges",
-                        List.of("-18000,-9000,1500", "7000,16000,1500"),
-                        () -> "0,1000,500",
+                        List.of(),
+                        () -> "-18000,-9000,1500",
                         AutumnConfig::isRangeString
                 );
         builder.pop();
@@ -59,16 +64,15 @@ public final class AutumnConfig {
         FORCE_TINT_UNTINTED = builder
                 .comment(
                         "Adds a tint index to otherwise untinted vegetation model quads so more modded plants can be recolored.",
-                        "Disable only if a particular rendering mod/model behaves badly."
-                )
+                        "Disable only if a particular rendering mod/model behaves badly.")
                 .define("forceTintUntintedModels", true);
         LEAF_STRENGTH = builder.defineInRange("leafStrength", 1.0, 0.0, 1.0);
-        SAPLING_STRENGTH = builder.defineInRange("saplingStrength", 0.85, 0.0, 1.0);
-        GRASS_STRENGTH = builder.defineInRange("grassStrength", 0.42, 0.0, 1.0);
-        VINE_SHRUB_STRENGTH = builder.defineInRange("vineAndShrubStrength", 0.65, 0.0, 1.0);
+        SAPLING_STRENGTH = builder.defineInRange("saplingStrength", 0.9, 0.0, 1.0);
+        GRASS_STRENGTH = builder.defineInRange("grassStrength", 0.46, 0.0, 1.0);
+        VINE_SHRUB_STRENGTH = builder.defineInRange("vineAndShrubStrength", 0.72, 0.0, 1.0);
         EVERGREEN_STRENGTH = builder
                 .comment("Keeps obvious conifers mostly green while still allowing a very slight seasonal shift.")
-                .defineInRange("evergreenStrength", 0.12, 0.0, 1.0);
+                .defineInRange("evergreenStrength", 0.10, 0.0, 1.0);
         COLOR_PATCH_SIZE = builder
                 .comment("Approximate horizontal size, in blocks, of smooth color patches. Larger values make whole trees/stands more consistent.")
                 .defineInRange("colorPatchSize", 10, 2, 64);
@@ -109,15 +113,15 @@ public final class AutumnConfig {
     }
 
     public static void refresh() {
-        List<AutumnRange> parsedRanges = new ArrayList<>();
-        for (String raw : RANGES.get()) {
-            parseRange(raw).ifPresent(parsedRanges::add);
-        }
+        ZoneSettings localZones = localZoneSnapshot();
+        ZoneSettings activeZones = ServerZoneOverride.isActive()
+                ? AutumnServerConfig.snapshot()
+                : localZones;
 
         runtime = new RuntimeSettings(
-                ENABLED.get(),
-                AXIS.get(),
-                List.copyOf(parsedRanges),
+                activeZones.enabled(),
+                activeZones.axis(),
+                activeZones.ranges(),
                 FORCE_TINT_UNTINTED.get(),
                 LEAF_STRENGTH.get(),
                 SAPLING_STRENGTH.get(),
@@ -132,7 +136,15 @@ public final class AutumnConfig {
         );
     }
 
-    private static java.util.Optional<AutumnRange> parseRange(String raw) {
+    public static ZoneSettings localZoneSnapshot() {
+        List<AutumnRange> parsedRanges = new ArrayList<>();
+        for (String raw : RANGES.get()) {
+            parseRange(raw).ifPresent(parsedRanges::add);
+        }
+        return new ZoneSettings(ENABLED.get(), AXIS.get(), List.copyOf(parsedRanges));
+    }
+
+    static java.util.Optional<AutumnRange> parseRange(String raw) {
         if (raw == null) return java.util.Optional.empty();
         String[] parts = raw.trim().split("\\s*,\\s*");
         if (parts.length != 3) return java.util.Optional.empty();
