@@ -4,7 +4,7 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="autumnfoliage"
-version="0.1.0-alpha.9.3"
+version="0.1.0-alpha.9.4"
 displayName="Autumn Foliage"
 displayTest="IGNORE_ALL_VERSION"
 description='''
@@ -17,7 +17,7 @@ file="META-INF/accesstransformer.cfg"
 [[dependencies.autumnfoliage]]
 modId="neoforge"
 type="required"
-versionRange="[21.1.252,)"
+versionRange="[21.1.1,21.2)"
 ordering="NONE"
 side="BOTH"
 

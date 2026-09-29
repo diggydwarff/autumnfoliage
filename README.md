@@ -4,6 +4,16 @@ Autumn Foliage is a NeoForge 1.21.1 client-side vegetation renderer that applies
 
 It was developed using the supplied **Autumnpack 3.0** resource pack as a visual reference, but replaces per-texture compatibility work with runtime vegetation detection, configurable color treatment, coordinate regions and optional server policy.
 
+
+## Compatibility
+
+- **Minecraft:** 1.21.1
+- **NeoForge:** any stable **21.1.x** release, from **21.1.1** up to (but not including) 21.2
+- **Java:** 21
+- **Distant Horizons:** optional; DH-specific recoloring is enabled when a compatible DH 3.3.1+ build is present
+
+The development environment intentionally targets NeoForge **21.1.247**, while the shipped mod metadata uses the broader `[21.1.1,21.2)` runtime range. The development patch version therefore does not become the minimum required version for users. NeoForge's versioning maps the `21.1.x` line to Minecraft 1.21.1, and the upper bound prevents the mod from claiming compatibility with later Minecraft patch lines.
+
 ## Features
 
 - Dynamic autumn coloring for vanilla and modded vegetation.
