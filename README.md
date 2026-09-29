@@ -30,6 +30,7 @@ The development environment intentionally targets NeoForge **21.1.247**, while t
 - Optional server installation can enforce world climate/appearance settings while selectively allowing client overrides.
 - Native Distant Horizons LOD recoloring so distant foliage follows the same autumn system.
 - Distant Horizons is included only in the development `runClient` environment and is not an end-user dependency.
+- Custom item renderers are left untouched. Autumn Foliage only wraps block-state models for untinted-vegetation fallback, avoiding conflicts with mods such as Create that require their item models to retain a specific baked-model class.
 
 ## In-game settings
 

@@ -40,8 +40,20 @@ public final class ClientEvents {
     public static void onModifyBakingResult(ModelEvent.ModifyBakingResult event) {
         // The event runs on a model-reload worker thread, so only touch the provided model map here.
         // Runtime vegetation classification happens later when getQuads receives a BlockState.
-        event.getModels().replaceAll((location, model) ->
-                model instanceof TintForcingBakedModel ? model : new TintForcingBakedModel(model));
+        //
+        // IMPORTANT: only wrap block-state models. Item models use the "inventory" variant and
+        // many mods (notably Create) rely on the baked model retaining a concrete custom type.
+        // Wrapping those models breaks their renderer casts even though state == null means we
+        // would never tint the item anyway. Standalone/additional models are skipped for the
+        // same reason: they are not needed for world foliage tinting and may have custom renderers.
+        event.getModels().replaceAll((location, model) -> {
+            String variant = location.getVariant();
+            if ("inventory".equals(variant) || "standalone".equals(variant) ||
+                    model instanceof TintForcingBakedModel) {
+                return model;
+            }
+            return new TintForcingBakedModel(model);
+        });
     }
 
     @SubscribeEvent
