@@ -38,7 +38,7 @@ public final class AutumnPalette {
         return switch (type) {
             case GRASS_FERN -> sampleGradient(GRASS_GRADIENT, smoothNoise(pos, 0x51A77E21L));
             case EVERGREEN_LEAVES -> EVERGREEN_AUTUMN;
-            case DECIDUOUS_LEAVES, SAPLING, VINE_SHRUB ->
+            case DECIDUOUS_LEAVES, TROPICAL, SAPLING, VINE_SHRUB ->
                     sampleGradient(LEAF_GRADIENT, smoothNoise(pos, 0xA17A5EEDL));
             default -> 0xFFFFFFFF;
         };

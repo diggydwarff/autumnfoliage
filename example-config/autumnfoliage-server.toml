@@ -1,8 +1,24 @@
 [zones]
-# Optional server authority. Clients without Autumn Foliage are unaffected.
 enabled = true
 axis = "Z"
-# Empty = autumn everywhere for clients that have the mod.
-ranges = []
-# Example:
+# Empty means autumn everywhere. Example bands:
 # ranges = ["-18000,-9000,1500", "7000,16000,1500"]
+ranges = []
+
+[appearance]
+leafStrength = 1.0
+saplingStrength = 0.9
+grassStrength = 0.46
+vineAndShrubStrength = 0.72
+evergreenStrength = 0.10
+colorPatchSize = 10
+autumnalTropics = false
+
+[clientOverrides]
+# Server remains authoritative for the master switch and zones by default.
+allowClientEnabledOverride = false
+allowClientZoneOverride = false
+# Set true if players should decide for themselves whether jungles/tropics turn autumnal.
+allowClientTropicalOverride = false
+# True by default: clients can tune color strengths/patch size. Set false for a consistent server-wide look.
+allowClientAppearanceOverride = true

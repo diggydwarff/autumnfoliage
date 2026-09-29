@@ -18,6 +18,20 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
 neoForge {
     version = project.neo_version
     validateAccessTransformers = true
@@ -49,6 +63,12 @@ neoForge {
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    // Development/runtime only: always include Distant Horizons in runClient compatibility tests.
+    // This is not packaged into Autumn Foliage and is not a required end-user dependency.
+    localRuntime "maven.modrinth:uCdwusMi:IcOcoekl"
 }
 
 tasks.withType(JavaCompile).configureEach {

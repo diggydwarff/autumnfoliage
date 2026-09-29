@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-/** Client preferences plus local fallback zones used when the server does not provide a policy. */
+/** Client preferences plus local fallback values used when no server policy is active or overrides are allowed. */
 public final class AutumnConfig {
     public static final ModConfigSpec SPEC;
 
@@ -23,12 +23,14 @@ public final class AutumnConfig {
     private static final ModConfigSpec.DoubleValue GRASS_STRENGTH;
     private static final ModConfigSpec.DoubleValue VINE_SHRUB_STRENGTH;
     private static final ModConfigSpec.DoubleValue EVERGREEN_STRENGTH;
+    private static final ModConfigSpec.BooleanValue AUTUMNAL_TROPICS;
     private static final ModConfigSpec.IntValue COLOR_PATCH_SIZE;
 
     private static final ModConfigSpec.ConfigValue<List<? extends String>> FORCE_INCLUDE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> FORCE_EXCLUDE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> EVERGREEN_KEYWORDS;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> TROPICAL_KEYWORDS;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> TROPICAL_BIOME_KEYWORDS;
 
     private static volatile RuntimeSettings runtime = RuntimeSettings.defaults();
 
@@ -38,20 +40,21 @@ public final class AutumnConfig {
         builder.push("zones");
         ENABLED = builder
                 .comment(
-                        "Local fallback zone switch.",
-                        "Used when connected to a multiplayer server that does NOT have Autumn Foliage installed.",
-                        "If the active server has the mod, its world/serverconfig zone policy takes precedence automatically.",
-                        "Single-player has an integrated server, so its per-world server config is authoritative.")
+                        "Local autumn switch.",
+                        "Used directly on unmodded servers. On modded servers it is used only if the server allows client override.")
+                .translation("autumnfoliage.config.client.enabled")
                 .define("enabled", true);
         AXIS = builder
                 .comment("World axis used for coordinate bands. Z is the usual north/south setup.")
+                .translation("autumnfoliage.config.client.axis")
                 .defineEnum("axis", Axis.Z);
         RANGES = builder
                 .comment(
-                        "Local fallback autumn coordinate ranges. Any number is supported.",
+                        "Local autumn coordinate ranges. Any number is supported.",
                         "Format: min,max,fadeDistance",
                         "An EMPTY list means the entire world is autumn-active.",
                         "When ranges are present, full autumn applies inside each range and fades smoothly outside its edges.")
+                .translation("autumnfoliage.config.client.ranges")
                 .defineListAllowEmpty(
                         "ranges",
                         List.of(),
@@ -65,28 +68,49 @@ public final class AutumnConfig {
                 .comment(
                         "Adds a tint index to otherwise untinted vegetation model quads so more modded plants can be recolored.",
                         "Disable only if a particular rendering mod/model behaves badly.")
+                .translation("autumnfoliage.config.client.forceTintUntintedModels")
                 .define("forceTintUntintedModels", true);
-        LEAF_STRENGTH = builder.defineInRange("leafStrength", 1.0, 0.0, 1.0);
-        SAPLING_STRENGTH = builder.defineInRange("saplingStrength", 0.9, 0.0, 1.0);
-        GRASS_STRENGTH = builder.defineInRange("grassStrength", 0.46, 0.0, 1.0);
-        VINE_SHRUB_STRENGTH = builder.defineInRange("vineAndShrubStrength", 0.72, 0.0, 1.0);
+        LEAF_STRENGTH = builder
+                .translation("autumnfoliage.config.client.leafStrength")
+                .defineInRange("leafStrength", 1.0, 0.0, 1.0);
+        SAPLING_STRENGTH = builder
+                .translation("autumnfoliage.config.client.saplingStrength")
+                .defineInRange("saplingStrength", 0.9, 0.0, 1.0);
+        GRASS_STRENGTH = builder
+                .translation("autumnfoliage.config.client.grassStrength")
+                .defineInRange("grassStrength", 0.46, 0.0, 1.0);
+        VINE_SHRUB_STRENGTH = builder
+                .translation("autumnfoliage.config.client.vineAndShrubStrength")
+                .defineInRange("vineAndShrubStrength", 0.72, 0.0, 1.0);
         EVERGREEN_STRENGTH = builder
-                .comment("Keeps obvious conifers mostly green while still allowing a very slight seasonal shift.")
+                .comment("Keeps obvious conifers mostly green while still allowing a slight seasonal shift.")
+                .translation("autumnfoliage.config.client.evergreenStrength")
                 .defineInRange("evergreenStrength", 0.10, 0.0, 1.0);
+        AUTUMNAL_TROPICS = builder
+                .comment(
+                        "Whether tropical/jungle vegetation should receive the autumn effect.",
+                        "False keeps tropical biomes and explicitly tropical blocks lush/green.",
+                        "On a modded server this local value is used only if the server allows tropical override.")
+                .translation("autumnfoliage.config.client.autumnalTropics")
+                .define("autumnalTropics", false);
         COLOR_PATCH_SIZE = builder
                 .comment("Approximate horizontal size, in blocks, of smooth color patches. Larger values make whole trees/stands more consistent.")
+                .translation("autumnfoliage.config.client.colorPatchSize")
                 .defineInRange("colorPatchSize", 10, 2, 64);
         builder.pop();
 
         builder.push("compatibility");
         FORCE_INCLUDE = builder
                 .comment("Exact block ids to force into autumn processing, e.g. \"somemod:odd_tree_foliage\".")
+                .translation("autumnfoliage.config.client.forceInclude")
                 .defineListAllowEmpty("forceInclude", List.of(), () -> "modid:block", AutumnConfig::isResourceIdString);
         FORCE_EXCLUDE = builder
                 .comment("Exact block ids that must never be recolored.")
+                .translation("autumnfoliage.config.client.forceExclude")
                 .defineListAllowEmpty("forceExclude", List.of(), () -> "modid:block", AutumnConfig::isResourceIdString);
         EVERGREEN_KEYWORDS = builder
                 .comment("Path fragments that identify evergreen/conifer foliage across mods.")
+                .translation("autumnfoliage.config.client.evergreenKeywords")
                 .defineListAllowEmpty(
                         "evergreenKeywords",
                         List.of("spruce", "pine", "fir", "cedar", "redwood", "sequoia", "cypress", "juniper", "hemlock", "conifer", "evergreen"),
@@ -94,11 +118,23 @@ public final class AutumnConfig {
                         AutumnConfig::isSimpleString
                 );
         TROPICAL_KEYWORDS = builder
-                .comment("Path fragments that identify vegetation which should remain lush/green.")
+                .comment("Path fragments that identify explicitly tropical vegetation.")
+                .translation("autumnfoliage.config.client.tropicalKeywords")
                 .defineListAllowEmpty(
                         "tropicalKeywords",
-                        List.of("jungle", "palm", "coconut", "banana", "tropical"),
+                        List.of("jungle", "palm", "coconut", "banana", "tropical", "rainforest", "mangrove", "monsoon"),
                         () -> "palm",
+                        AutumnConfig::isSimpleString
+                );
+        TROPICAL_BIOME_KEYWORDS = builder
+                .comment(
+                        "Biome id path fragments treated as tropical when autumnalTropics is false.",
+                        "This catches generic vines/grass inside jungle-like biomes even when the block itself has no tropical name.")
+                .translation("autumnfoliage.config.client.tropicalBiomeKeywords")
+                .defineListAllowEmpty(
+                        "tropicalBiomeKeywords",
+                        List.of("jungle", "rainforest", "tropical", "tropics", "monsoon", "mangrove"),
+                        () -> "rainforest",
                         AutumnConfig::isSimpleString
                 );
         builder.pop();
@@ -114,25 +150,49 @@ public final class AutumnConfig {
 
     public static void refresh() {
         ZoneSettings localZones = localZoneSnapshot();
-        ZoneSettings activeZones = ServerZoneOverride.isActive()
-                ? AutumnServerConfig.snapshot()
-                : localZones;
+        AppearanceSettings localAppearance = localAppearanceSnapshot();
+
+        boolean enabled = localZones.enabled();
+        Axis axis = localZones.axis();
+        List<AutumnRange> ranges = localZones.ranges();
+        boolean autumnalTropics = AUTUMNAL_TROPICS.get();
+        AppearanceSettings appearance = localAppearance;
+
+        if (ServerZoneOverride.isActive()) {
+            ZoneSettings serverZones = AutumnServerConfig.snapshot();
+
+            if (!AutumnServerConfig.allowClientEnabledOverride()) {
+                enabled = serverZones.enabled();
+            }
+            if (!AutumnServerConfig.allowClientZoneOverride()) {
+                axis = serverZones.axis();
+                ranges = serverZones.ranges();
+            }
+            if (!AutumnServerConfig.allowClientTropicalOverride()) {
+                autumnalTropics = AutumnServerConfig.autumnalTropics();
+            }
+            if (!AutumnServerConfig.allowClientAppearanceOverride()) {
+                appearance = AutumnServerConfig.appearanceSnapshot();
+            }
+        }
 
         runtime = new RuntimeSettings(
-                activeZones.enabled(),
-                activeZones.axis(),
-                activeZones.ranges(),
+                enabled,
+                axis,
+                ranges,
                 FORCE_TINT_UNTINTED.get(),
-                LEAF_STRENGTH.get(),
-                SAPLING_STRENGTH.get(),
-                GRASS_STRENGTH.get(),
-                VINE_SHRUB_STRENGTH.get(),
-                EVERGREEN_STRENGTH.get(),
-                COLOR_PATCH_SIZE.get(),
+                appearance.leafStrength(),
+                appearance.saplingStrength(),
+                appearance.grassStrength(),
+                appearance.vineAndShrubStrength(),
+                appearance.evergreenStrength(),
+                autumnalTropics,
+                appearance.colorPatchSize(),
                 normalizedSet(FORCE_INCLUDE.get()),
                 normalizedSet(FORCE_EXCLUDE.get()),
                 normalizedList(EVERGREEN_KEYWORDS.get()),
-                normalizedList(TROPICAL_KEYWORDS.get())
+                normalizedList(TROPICAL_KEYWORDS.get()),
+                normalizedList(TROPICAL_BIOME_KEYWORDS.get())
         );
     }
 
@@ -142,6 +202,17 @@ public final class AutumnConfig {
             parseRange(raw).ifPresent(parsedRanges::add);
         }
         return new ZoneSettings(ENABLED.get(), AXIS.get(), List.copyOf(parsedRanges));
+    }
+
+    public static AppearanceSettings localAppearanceSnapshot() {
+        return new AppearanceSettings(
+                LEAF_STRENGTH.get(),
+                SAPLING_STRENGTH.get(),
+                GRASS_STRENGTH.get(),
+                VINE_SHRUB_STRENGTH.get(),
+                EVERGREEN_STRENGTH.get(),
+                COLOR_PATCH_SIZE.get()
+        );
     }
 
     static java.util.Optional<AutumnRange> parseRange(String raw) {

@@ -20,13 +20,17 @@ public final class AutumnColorizer {
         }
 
         VegetationType type = VegetationClassifier.classify(state);
-        if (type == VegetationType.NONE || type == VegetationType.TROPICAL) {
+        if (type == VegetationType.NONE) {
             return originalColor;
         }
 
         RuntimeSettings settings = AutumnConfig.runtime();
+        if (!settings.autumnalTropics() &&
+                (type == VegetationType.TROPICAL || VegetationClassifier.isTropicalBiome(level, pos))) {
+            return originalColor;
+        }
         double categoryStrength = switch (type) {
-            case DECIDUOUS_LEAVES -> settings.leafStrength();
+            case DECIDUOUS_LEAVES, TROPICAL -> settings.leafStrength();
             case EVERGREEN_LEAVES -> settings.evergreenStrength();
             case SAPLING -> settings.saplingStrength();
             case GRASS_FERN -> settings.grassStrength();

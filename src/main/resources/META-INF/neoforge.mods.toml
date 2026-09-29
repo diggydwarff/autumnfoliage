@@ -4,11 +4,11 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="autumnfoliage"
-version="0.1.0-alpha.2.1"
+version="0.1.0-alpha.4"
 displayName="Autumn Foliage"
 displayTest="IGNORE_ALL_VERSION"
 description='''
-Client-side autumn vegetation rendering with broad vanilla/mod compatibility, smooth coordinate zones, and optional server-authoritative zone configuration.
+Client-side autumn vegetation rendering with broad vanilla/mod compatibility, smooth coordinate zones, in-game configuration, and optional server policy with selective client overrides.
 '''
 
 [[accessTransformers]]

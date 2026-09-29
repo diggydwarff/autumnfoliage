@@ -9,12 +9,12 @@ import net.neoforged.neoforge.network.codec.NeoForgeStreamCodecs;
 
 /**
  * Zero-data optional handshake sent after login. The actual zone values are carried by NeoForge's
- * normal SERVER-config sync; this payload simply tells the client to prefer them over local zones.
+ * normal SERVER-config sync; this payload simply tells the client that a server policy is active.
  */
 public record ServerConfigActivePayload() implements CustomPacketPayload {
     public static final ServerConfigActivePayload INSTANCE = new ServerConfigActivePayload();
     public static final Type<ServerConfigActivePayload> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(AutumnFoliage.MOD_ID, "server_zones_active")
+            ResourceLocation.fromNamespaceAndPath(AutumnFoliage.MOD_ID, "server_policy_active")
     );
     public static final StreamCodec<RegistryFriendlyByteBuf, ServerConfigActivePayload> STREAM_CODEC =
             NeoForgeStreamCodecs.uncheckedUnit(INSTANCE);

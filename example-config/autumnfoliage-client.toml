@@ -1,12 +1,8 @@
 [zones]
-# Local fallback used on multiplayer servers that do NOT have Autumn Foliage installed.
-# A modded server (including single-player's integrated server) uses its world server config instead.
+# Empty ranges = autumn everywhere. Add as many entries as needed: "min,max,fadeDistance".
 enabled = true
 axis = "Z"
-# Empty = autumn everywhere. Add any number of "min,max,fadeDistance" entries to limit it.
 ranges = []
-# Example two-band world:
-# ranges = ["-18000,-9000,1500", "7000,16000,1500"]
 
 [rendering]
 forceTintUntintedModels = true
@@ -15,10 +11,12 @@ saplingStrength = 0.9
 grassStrength = 0.46
 vineAndShrubStrength = 0.72
 evergreenStrength = 0.10
+autumnalTropics = false
 colorPatchSize = 10
 
 [compatibility]
 forceInclude = []
 forceExclude = []
 evergreenKeywords = ["spruce", "pine", "fir", "cedar", "redwood", "sequoia", "cypress", "juniper", "hemlock", "conifer", "evergreen"]
-tropicalKeywords = ["jungle", "palm", "coconut", "banana", "tropical"]
+tropicalKeywords = ["jungle", "palm", "coconut", "banana", "tropical", "rainforest", "mangrove", "monsoon"]
+tropicalBiomeKeywords = ["jungle", "rainforest", "tropical", "tropics", "monsoon", "mangrove"]

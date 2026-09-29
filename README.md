@@ -1,102 +1,74 @@
 # Autumn Foliage
 
-NeoForge 1.21.1 vegetation renderer based on the supplied **Autumnpack 3.0** look, but designed to work broadly with vanilla and modded vegetation instead of requiring per-mod texture replacements.
+Autumn Foliage is a NeoForge 1.21.1 vegetation renderer that applies autumn colors dynamically to vanilla and modded foliage while preserving the original block textures and models.
 
-## What changed in alpha.2
+It was designed from the supplied **Autumnpack 3.0** resource pack as a visual reference, but replaces per-texture compatibility work with broad runtime vegetation detection and tinting.
 
-- Brighter, more saturated reds/oranges/ambers/golds; the first pass leaned too heavily brown/rust.
-- **Default is now autumn everywhere.** An empty range list means the entire world is affected.
-- Coordinate ranges are still fully supported when wanted; any number of ranges can be configured.
-- The mod is **not required on the server**.
-- If the server also has Autumn Foliage installed, its zone settings automatically become authoritative for clients that have the mod.
-- Clients without the mod remain unaffected by the server installation.
+## Main features
 
-## Zones
+- Dynamic autumn colors for vanilla and modded vegetation.
+- Detects leaves through vanilla tags/classes plus mod-friendly naming fallbacks.
+- Covers leaves, saplings, grass/ferns, vines, shrubs and other common vegetation.
+- Deterministic red/orange/amber/gold color variation by world position.
+- Obvious conifers remain mostly green by default.
+- Tropical/jungle vegetation can remain lush or be made autumnal with one setting.
+- Optional coordinate ranges with smooth fade distances.
+- Any number of coordinate ranges is supported; an empty range list means autumn everywhere.
+- Client installation is sufficient; the server does not require the mod.
+- If the server also installs the mod, it can provide world-wide policy to clients that have Autumn Foliage.
+- Distant Horizons is included as a development-only `runClient` dependency for compatibility testing; it is not bundled or required by Autumn Foliage.
 
-Local/client fallback config (used when a remote multiplayer server does not have the mod):
+## In-game configuration
 
-```toml
-[zones]
-enabled = true
-axis = "Z"
-ranges = []
-```
+Open **Mods -> Autumn Foliage -> Config**. NeoForge's built-in configuration screen exposes the client configuration and, where permitted, the current world's server configuration. Changes are picked up by Autumn Foliage and trigger a chunk render refresh; no Minecraft restart is intended for normal visual settings.
 
-`ranges = []` means full-world autumn.
-
-To limit the effect, add one or more ranges:
-
-```toml
-ranges = ["-18000,-9000,1500", "7000,16000,1500"]
-```
-
-Each entry is:
+The coordinate range list uses:
 
 ```text
 min,max,fadeDistance
 ```
 
-Inside `min..max`, autumn is full strength. `fadeDistance` smoothly blends back to normal vegetation outside each edge. Overlapping fades use the strongest effect.
+Example:
+
+```text
+-18000,-9000,1500
+7000,16000,1500
+```
+
+With `ranges = []`, autumn applies to the entire world.
+
+## Tropical vegetation
+
+`autumnalTropics = false` is the default. Tropical blocks and vegetation inside jungle/rainforest-like biomes remain green. Set it to `true` for autumnal tropical vegetation as well.
+
+Detection is configurable through tropical block and biome keyword lists.
 
 ## Optional server policy
 
-The same JAR may be installed on a dedicated server, but it is optional. NeoForge stores the server config in the world's `serverconfig` folder as `autumnfoliage-server.toml`.
+The server mod is optional. If absent, the client uses its local configuration normally.
 
-Example:
+If the server has Autumn Foliage installed, its synced server config can provide:
+
+- master autumn enabled state
+- coordinate axis and autumn ranges
+- autumnal tropical policy
+- leaf/sapling/grass/vine/evergreen strengths
+- color patch size
+
+The server can selectively allow client overrides:
 
 ```toml
-[zones]
-enabled = true
-axis = "Z"
-ranges = ["-18000,-9000,1500", "7000,16000,1500"]
+[clientOverrides]
+allowClientEnabledOverride = false
+allowClientZoneOverride = false
+allowClientTropicalOverride = false
+allowClientAppearanceOverride = true
 ```
 
-When a client with Autumn Foliage joins a server that also has it:
+For example, a server can enforce its climate/coordinate bands while setting `allowClientTropicalOverride = true` so each player decides whether jungle vegetation becomes autumnal.
 
-1. NeoForge syncs the server zone config to that client.
-2. An optional Autumn Foliage network handshake tells the client to use the server's zones instead of its local fallback ranges.
-3. On disconnect, the client returns to its own local fallback config.
+Client-only compatibility values such as force-included/excluded blocks and tint-model workarounds always remain local because different clients may use different rendering or vegetation mods.
 
-Single-player runs an integrated server, so it uses the world's `serverconfig/autumnfoliage-server.toml`. This is useful because different worlds can have different autumn bands.
+## Notes
 
-The network payload itself is optional, so either side may be missing the mod without making it a required server/client dependency.
-
-## Vegetation compatibility
-
-The renderer is deliberately mod-agnostic:
-
-- Wraps existing vanilla/mod block-color providers rather than replacing them.
-- Recognizes `#minecraft:leaves`, vanilla leaf/sapling classes, plus common modded vegetation naming conventions.
-- Can assign tint index 0 to otherwise untinted vegetation quads for broader mod support.
-- Avoids forced whole-model tint on grass/turf blocks so dirt faces are not recolored.
-- Exact block IDs can be force-included or force-excluded.
-- Tropical foliage is left green by default.
-- Obvious evergreen/conifer foliage receives only a very weak autumn shift.
-- Grass, ferns, vines, shrubs and saplings use weaker strengths than deciduous leaves.
-- Classification is cached for chunk-building performance.
-
-## Autumnpack reference
-
-The original pack was used as the visual direction: mixed red, orange, amber, gold and dry grass instead of one flat color. Alpha.2 pushes the palette toward the brighter parts of that pack because alpha.1 looked too brown/dreary in dense forests.
-
-The old Autumnpack foliage/grass overrides should not be enabled simultaneously if you want coordinate fades to return to normal green outside configured ranges. Direct resource-pack replacements are global; this mod is coordinate-aware.
-
-## Rendering limitation
-
-Minecraft's normal block tint is multiplicative. Conventional neutral or biome-tinted leaves recolor very cleanly. A mod that bakes a strong green hue directly into its pixels or uses a completely custom renderer may still need a compatibility rule.
-
-## Build
-
-- Minecraft: 1.21.1
-- NeoForge: 21.1.252
-- Java: 21
-- ModDevGradle: 2.0.147
-- Version: 0.1.0-alpha.2
-
-Build with:
-
-```text
-gradlew build
-```
-
-The JAR will be under `build/libs/`.
+The mod only changes rendering. It does not replace blocks, modify biomes, or write seasonal state into the world save.

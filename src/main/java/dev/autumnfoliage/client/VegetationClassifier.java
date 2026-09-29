@@ -2,9 +2,16 @@ package dev.autumnfoliage.client;
 
 import dev.autumnfoliage.config.AutumnConfig;
 import dev.autumnfoliage.config.RuntimeSettings;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.SaplingBlock;
@@ -34,12 +41,49 @@ public final class VegetationClassifier {
     }
 
     /**
+     * Biome-level tropical detection catches generic vegetation (especially vines and grass)
+     * growing inside jungle/rainforest biomes even when the block id itself is generic.
+     *
+     * BlockAndTintGetter deliberately does not expose getBiome in 1.21.1. Vanilla chunk meshing
+     * commonly passes RenderChunkRegion here, so we use a LevelReader when available and otherwise
+     * fall back to the active ClientLevel. The fallback is read-only and points at the same loaded
+     * world currently being meshed.
+     */
+    public static boolean isTropicalBiome(BlockAndTintGetter level, BlockPos pos) {
+        if (level == null || pos == null) {
+            return false;
+        }
+
+        Holder<Biome> biome = null;
+        if (level instanceof LevelReader reader) {
+            biome = reader.getBiome(pos);
+        } else {
+            ClientLevel clientLevel = Minecraft.getInstance().level;
+            if (clientLevel != null) {
+                biome = clientLevel.getBiome(pos);
+            }
+        }
+
+        if (biome == null) {
+            return false;
+        }
+
+        String path = biome.unwrapKey()
+                .map(key -> key.location().getPath().toLowerCase(Locale.ROOT))
+                .orElse("");
+        return containsAny(path, AutumnConfig.runtime().tropicalBiomeKeywords());
+    }
+
+    /**
      * Whether it is reasonably safe to assign tint index 0 to every otherwise-untinted quad
      * in this block model. Ground blocks such as grass blocks are intentionally excluded so
      * their dirt/soil faces are not recolored.
      */
     public static boolean canForceTintWholeModel(BlockState state, VegetationType type) {
-        if (type == VegetationType.NONE || type == VegetationType.TROPICAL) {
+        if (type == VegetationType.NONE) {
+            return false;
+        }
+        if (type == VegetationType.TROPICAL && !AutumnConfig.runtime().autumnalTropics()) {
             return false;
         }
 
