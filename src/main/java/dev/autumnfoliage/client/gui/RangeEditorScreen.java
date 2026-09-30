@@ -113,7 +113,7 @@ final class RangeEditorScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(graphics);
         boolean compact = this.height < 260;
 
         graphics.fill(left - 8, compact ? 56 : 66, this.width - left + 8, this.height - 40, 0x50000000);

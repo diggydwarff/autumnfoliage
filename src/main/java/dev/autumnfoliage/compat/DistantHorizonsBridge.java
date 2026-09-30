@@ -1,6 +1,6 @@
 package dev.autumnfoliage.compat;
 
-import net.neoforged.fml.ModList;
+import net.minecraftforge.fml.ModList;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

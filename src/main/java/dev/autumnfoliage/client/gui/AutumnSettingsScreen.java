@@ -25,7 +25,7 @@ import java.util.function.IntConsumer;
 /**
  * Purpose-built Autumn Foliage settings screen.
  *
- * The generic NeoForge config editor remains excellent for raw config data, but this screen deliberately
+ * The generic Forge config editor remains excellent for raw config data, but this screen deliberately
  * presents the settings in player-facing groups and hides TOML/list implementation details.
  */
 public final class AutumnSettingsScreen extends Screen {
@@ -605,7 +605,7 @@ public final class AutumnSettingsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(graphics);
 
         int panelTop = Math.max(64, contentTop - 6);
         int panelBottom = Math.max(panelTop + 24, footerY - 6);

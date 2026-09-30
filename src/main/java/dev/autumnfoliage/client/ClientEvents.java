@@ -5,13 +5,16 @@ import dev.autumnfoliage.compat.DistantHorizonsBridge;
 import dev.autumnfoliage.config.AutumnConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColor;
+import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.bus.api.EventPriority;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.event.config.ModConfigEvent;
-import net.neoforged.neoforge.client.event.ModelEvent;
-import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
+import net.minecraftforge.client.event.ModelEvent;
+import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -24,7 +27,23 @@ public final class ClientEvents {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onRegisterBlockColors(RegisterColorHandlersEvent.Block event) {
         ORIGINAL_BLOCK_COLORS.clear();
-        ORIGINAL_BLOCK_COLORS.putAll(event.getBlockColors().blockColors);
+        Map<net.minecraft.core.Holder.Reference<Block>, BlockColor> registeredColors =
+                ObfuscationReflectionHelper.getPrivateValue(
+                        BlockColors.class,
+                        event.getBlockColors(),
+                        "f_92571_"
+                );
+        if (registeredColors != null) {
+            // Forge 1.20.1 stores vanilla/mod block colors by Holder.Reference. Do not retain
+            // those holder objects as IdentityHashMap keys: the holder instance used later by a
+            // Block lookup is not guaranteed to be the exact same Java object. Collapse the
+            // snapshot back to stable Block instances, matching the newer NeoForge ports.
+            registeredColors.forEach((holder, color) -> {
+                if (holder != null && color != null) {
+                    ORIGINAL_BLOCK_COLORS.put(holder.value(), color);
+                }
+            });
+        }
 
         BlockColor autumnAware = (state, level, pos, tintIndex) -> {
             BlockColor original = ORIGINAL_BLOCK_COLORS.get(state.getBlock());
@@ -47,9 +66,14 @@ public final class ClientEvents {
         // would never tint the item anyway. Standalone/additional models are skipped for the
         // same reason: they are not needed for world foliage tinting and may have custom renderers.
         event.getModels().replaceAll((location, model) -> {
-            String variant = location.getVariant();
-            if ("inventory".equals(variant) || "standalone".equals(variant) ||
-                    model instanceof TintForcingBakedModel) {
+            if (model instanceof TintForcingBakedModel) {
+                return model;
+            }
+            if (!(location instanceof ModelResourceLocation modelLocation)) {
+                return model;
+            }
+            String variant = modelLocation.getVariant();
+            if ("inventory".equals(variant)) {
                 return model;
             }
             return new TintForcingBakedModel(model);

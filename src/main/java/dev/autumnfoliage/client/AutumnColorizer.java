@@ -132,7 +132,7 @@ public final class AutumnColorizer {
             return originalColor;
         }
 
-        // Minecraft 1.21.1 expects ARGB. -1 is opaque white/no tint. Some older mod color handlers
+        // Forge 1.20.1 block tint multipliers are ARGB. -1 is opaque white/no tint. Some mod color handlers
         // still return 24-bit RGB, so normalize those to opaque before blending.
         int base = normalizeArgb(originalColor);
         int target = AutumnPalette.target(type, state, pos);

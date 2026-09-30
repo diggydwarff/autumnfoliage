@@ -1,36 +1,33 @@
 modLoader="javafml"
-loaderVersion="[1,)"
+loaderVersion="[47,48)"
 license="All Rights Reserved"
 
 [[mods]]
 modId="autumnfoliage"
-version="0.1.0-alpha.9.5"
+version="1.0.0"
 displayName="Autumn Foliage"
 displayTest="IGNORE_ALL_VERSION"
 description='''
 Client-side autumn vegetation rendering with broad vanilla/mod compatibility, smooth coordinate zones, Distant Horizons LOD recoloring, a purpose-built in-game settings UI, and optional server policy with selective client overrides.
 '''
 
-[[accessTransformers]]
-file="META-INF/accesstransformer.cfg"
-
 [[dependencies.autumnfoliage]]
-modId="neoforge"
-type="required"
-versionRange="[21.1.1,21.2)"
+modId="forge"
+mandatory=true
+versionRange="[47.4.0,48)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.autumnfoliage]]
 modId="minecraft"
-type="required"
-versionRange="[1.21.1]"
+mandatory=true
+versionRange="[1.20.1,1.20.2)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.autumnfoliage]]
 modId="distanthorizons"
-type="optional"
-versionRange="[3.3.1,)"
+mandatory=false
+versionRange="[3.3.0,)"
 ordering="NONE"
 side="CLIENT"

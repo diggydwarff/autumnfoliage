@@ -95,7 +95,7 @@ final class SeasonDateEditorScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(graphics);
         int panelWidth = Math.min(260, Math.max(190, this.width - 32));
         int left = (this.width - panelWidth) / 2;
         int top = Math.max(48, this.height / 2 - 88);

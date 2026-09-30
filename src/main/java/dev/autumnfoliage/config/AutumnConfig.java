@@ -1,7 +1,7 @@
 package dev.autumnfoliage.config;
 
 import dev.autumnfoliage.network.ServerZoneOverride;
-import net.neoforged.neoforge.common.ModConfigSpec;
+import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -16,7 +16,7 @@ import java.time.format.DateTimeParseException;
 
 /** Client preferences plus local fallback values used when no server policy is active or overrides are allowed. */
 public final class AutumnConfig {
-    public static final ModConfigSpec SPEC;
+    public static final ForgeConfigSpec SPEC;
 
     private static final List<String> LEGACY_TROPICAL_KEYWORDS = List.of(
             "jungle", "palm", "coconut", "banana", "tropical", "rainforest", "mangrove", "monsoon"
@@ -43,38 +43,38 @@ public final class AutumnConfig {
     );
     private static final DateTimeFormatter MONTH_DAY_FORMAT = DateTimeFormatter.ofPattern("MM-dd", Locale.ROOT);
 
-    private static final ModConfigSpec.BooleanValue ENABLED;
-    private static final ModConfigSpec.EnumValue<Axis> AXIS;
-    private static final ModConfigSpec.ConfigValue<List<? extends String>> RANGES;
-    private static final ModConfigSpec.BooleanValue FORCE_TINT_UNTINTED;
+    private static final ForgeConfigSpec.BooleanValue ENABLED;
+    private static final ForgeConfigSpec.EnumValue<Axis> AXIS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> RANGES;
+    private static final ForgeConfigSpec.BooleanValue FORCE_TINT_UNTINTED;
 
-    private static final ModConfigSpec.DoubleValue LEAF_STRENGTH;
-    private static final ModConfigSpec.DoubleValue FOLIAGE_VIBRANCY;
-    private static final ModConfigSpec.DoubleValue FOLIAGE_BRIGHTNESS;
-    private static final ModConfigSpec.DoubleValue SAPLING_STRENGTH;
-    private static final ModConfigSpec.DoubleValue GRASS_STRENGTH;
-    private static final ModConfigSpec.DoubleValue VINE_SHRUB_STRENGTH;
-    private static final ModConfigSpec.DoubleValue EVERGREEN_STRENGTH;
-    private static final ModConfigSpec.BooleanValue AUTUMNAL_TROPICS;
-    private static final ModConfigSpec.IntValue COLOR_PATCH_SIZE;
+    private static final ForgeConfigSpec.DoubleValue LEAF_STRENGTH;
+    private static final ForgeConfigSpec.DoubleValue FOLIAGE_VIBRANCY;
+    private static final ForgeConfigSpec.DoubleValue FOLIAGE_BRIGHTNESS;
+    private static final ForgeConfigSpec.DoubleValue SAPLING_STRENGTH;
+    private static final ForgeConfigSpec.DoubleValue GRASS_STRENGTH;
+    private static final ForgeConfigSpec.DoubleValue VINE_SHRUB_STRENGTH;
+    private static final ForgeConfigSpec.DoubleValue EVERGREEN_STRENGTH;
+    private static final ForgeConfigSpec.BooleanValue AUTUMNAL_TROPICS;
+    private static final ForgeConfigSpec.IntValue COLOR_PATCH_SIZE;
 
-    private static final ModConfigSpec.BooleanValue CALENDAR_TIMING_ENABLED;
-    private static final ModConfigSpec.ConfigValue<String> AUTUMN_START_DATE;
-    private static final ModConfigSpec.ConfigValue<String> AUTUMN_END_DATE;
-    private static final ModConfigSpec.IntValue SEASON_BLEND_DAYS;
-    private static final ModConfigSpec.IntValue SEASONAL_VARIATION_DAYS;
-    private static final ModConfigSpec.ConfigValue<List<? extends String>> SPECIES_TIMING_OFFSETS;
+    private static final ForgeConfigSpec.BooleanValue CALENDAR_TIMING_ENABLED;
+    private static final ForgeConfigSpec.ConfigValue<String> AUTUMN_START_DATE;
+    private static final ForgeConfigSpec.ConfigValue<String> AUTUMN_END_DATE;
+    private static final ForgeConfigSpec.IntValue SEASON_BLEND_DAYS;
+    private static final ForgeConfigSpec.IntValue SEASONAL_VARIATION_DAYS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> SPECIES_TIMING_OFFSETS;
 
-    private static final ModConfigSpec.ConfigValue<List<? extends String>> FORCE_INCLUDE;
-    private static final ModConfigSpec.ConfigValue<List<? extends String>> FORCE_EXCLUDE;
-    private static final ModConfigSpec.ConfigValue<List<? extends String>> EVERGREEN_KEYWORDS;
-    private static final ModConfigSpec.ConfigValue<List<? extends String>> TROPICAL_KEYWORDS;
-    private static final ModConfigSpec.ConfigValue<List<? extends String>> TROPICAL_BIOME_KEYWORDS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> FORCE_INCLUDE;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> FORCE_EXCLUDE;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> EVERGREEN_KEYWORDS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> TROPICAL_KEYWORDS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> TROPICAL_BIOME_KEYWORDS;
 
     private static volatile RuntimeSettings runtime = RuntimeSettings.defaults();
 
     static {
-        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
         builder.push("zones");
         ENABLED = builder
@@ -97,7 +97,6 @@ public final class AutumnConfig {
                 .defineListAllowEmpty(
                         "ranges",
                         List.of(),
-                        () -> "-18000,-9000,1500",
                         AutumnConfig::isRangeString
                 );
         builder.pop();
@@ -189,7 +188,6 @@ public final class AutumnConfig {
                 .defineListAllowEmpty(
                         "speciesTimingOffsets",
                         DEFAULT_SPECIES_TIMING_OFFSETS,
-                        () -> "birch=-5",
                         AutumnConfig::isSpeciesOffsetString
                 );
         builder.pop();
@@ -198,18 +196,17 @@ public final class AutumnConfig {
         FORCE_INCLUDE = builder
                 .comment("Exact block ids to force into autumn processing, e.g. \"somemod:odd_tree_foliage\".")
                 .translation("autumnfoliage.config.client.forceInclude")
-                .defineListAllowEmpty("forceInclude", List.of(), () -> "modid:block", AutumnConfig::isResourceIdString);
+                .defineListAllowEmpty("forceInclude", List.of(), AutumnConfig::isResourceIdString);
         FORCE_EXCLUDE = builder
                 .comment("Exact block ids that must never be recolored.")
                 .translation("autumnfoliage.config.client.forceExclude")
-                .defineListAllowEmpty("forceExclude", List.of(), () -> "modid:block", AutumnConfig::isResourceIdString);
+                .defineListAllowEmpty("forceExclude", List.of(), AutumnConfig::isResourceIdString);
         EVERGREEN_KEYWORDS = builder
                 .comment("Path fragments that identify evergreen/conifer foliage across mods.")
                 .translation("autumnfoliage.config.client.evergreenKeywords")
                 .defineListAllowEmpty(
                         "evergreenKeywords",
                         List.of("spruce", "pine", "fir", "cedar", "redwood", "sequoia", "cypress", "juniper", "hemlock", "conifer", "evergreen"),
-                        () -> "pine",
                         AutumnConfig::isSimpleString
                 );
         TROPICAL_KEYWORDS = builder
@@ -218,7 +215,6 @@ public final class AutumnConfig {
                 .defineListAllowEmpty(
                         "tropicalKeywords",
                         DEFAULT_TROPICAL_KEYWORDS,
-                        () -> "palm",
                         AutumnConfig::isSimpleString
                 );
         TROPICAL_BIOME_KEYWORDS = builder
@@ -229,7 +225,6 @@ public final class AutumnConfig {
                 .defineListAllowEmpty(
                         "tropicalBiomeKeywords",
                         DEFAULT_TROPICAL_BIOME_KEYWORDS,
-                        () -> "rainforest",
                         AutumnConfig::isSimpleString
                 );
         builder.pop();

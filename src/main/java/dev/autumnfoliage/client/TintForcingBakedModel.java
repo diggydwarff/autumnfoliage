@@ -7,8 +7,8 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.client.model.BakedModelWrapper;
-import net.neoforged.neoforge.client.model.data.ModelData;
+import net.minecraftforge.client.model.BakedModelWrapper;
+import net.minecraftforge.client.model.data.ModelData;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -18,7 +18,7 @@ import java.util.Locale;
 /**
  * Makes otherwise-untinted vegetation quads participate in the standard BlockColor pipeline.
  *
- * NeoForge 1.21.1 still uses BakedModelWrapper here. Normal vegetation gets tint index 0 only on
+ * Forge 1.20.1 uses BakedModelWrapper here. Normal vegetation gets tint index 0 only on
  * otherwise-untinted quads. Living bamboo is handled specially: every bamboo quad is routed by
  * its actual sprite so stalks use tint index 1 and leaf/sapling geometry uses tint index 0.
  */

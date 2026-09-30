@@ -210,7 +210,7 @@ final class StringListEditorScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(graphics);
         graphics.fill(panelLeft - 8, 66, panelRight + 8, this.height - 40, 0x50000000);
         super.render(graphics, mouseX, mouseY, partialTick);
 

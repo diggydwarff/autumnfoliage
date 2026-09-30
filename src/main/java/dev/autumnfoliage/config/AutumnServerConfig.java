@@ -1,39 +1,39 @@
 package dev.autumnfoliage.config;
 
-import net.neoforged.neoforge.common.ModConfigSpec;
+import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Optional server policy. NeoForge SERVER configs are synced to clients that have the mod.
+ * Optional server policy. Forge SERVER configs are synced to clients that have the mod.
  * The server can enforce world zones and selected appearance settings, while explicitly
  * allowing clients to override chosen groups.
  */
 public final class AutumnServerConfig {
-    public static final ModConfigSpec SPEC;
+    public static final ForgeConfigSpec SPEC;
 
-    private static final ModConfigSpec.BooleanValue ENABLED;
-    private static final ModConfigSpec.EnumValue<Axis> AXIS;
-    private static final ModConfigSpec.ConfigValue<List<? extends String>> RANGES;
+    private static final ForgeConfigSpec.BooleanValue ENABLED;
+    private static final ForgeConfigSpec.EnumValue<Axis> AXIS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> RANGES;
 
-    private static final ModConfigSpec.DoubleValue LEAF_STRENGTH;
-    private static final ModConfigSpec.DoubleValue FOLIAGE_VIBRANCY;
-    private static final ModConfigSpec.DoubleValue FOLIAGE_BRIGHTNESS;
-    private static final ModConfigSpec.DoubleValue SAPLING_STRENGTH;
-    private static final ModConfigSpec.DoubleValue GRASS_STRENGTH;
-    private static final ModConfigSpec.DoubleValue VINE_SHRUB_STRENGTH;
-    private static final ModConfigSpec.DoubleValue EVERGREEN_STRENGTH;
-    private static final ModConfigSpec.IntValue COLOR_PATCH_SIZE;
-    private static final ModConfigSpec.BooleanValue AUTUMNAL_TROPICS;
+    private static final ForgeConfigSpec.DoubleValue LEAF_STRENGTH;
+    private static final ForgeConfigSpec.DoubleValue FOLIAGE_VIBRANCY;
+    private static final ForgeConfigSpec.DoubleValue FOLIAGE_BRIGHTNESS;
+    private static final ForgeConfigSpec.DoubleValue SAPLING_STRENGTH;
+    private static final ForgeConfigSpec.DoubleValue GRASS_STRENGTH;
+    private static final ForgeConfigSpec.DoubleValue VINE_SHRUB_STRENGTH;
+    private static final ForgeConfigSpec.DoubleValue EVERGREEN_STRENGTH;
+    private static final ForgeConfigSpec.IntValue COLOR_PATCH_SIZE;
+    private static final ForgeConfigSpec.BooleanValue AUTUMNAL_TROPICS;
 
-    private static final ModConfigSpec.BooleanValue ALLOW_CLIENT_ENABLED_OVERRIDE;
-    private static final ModConfigSpec.BooleanValue ALLOW_CLIENT_ZONE_OVERRIDE;
-    private static final ModConfigSpec.BooleanValue ALLOW_CLIENT_TROPICAL_OVERRIDE;
-    private static final ModConfigSpec.BooleanValue ALLOW_CLIENT_APPEARANCE_OVERRIDE;
+    private static final ForgeConfigSpec.BooleanValue ALLOW_CLIENT_ENABLED_OVERRIDE;
+    private static final ForgeConfigSpec.BooleanValue ALLOW_CLIENT_ZONE_OVERRIDE;
+    private static final ForgeConfigSpec.BooleanValue ALLOW_CLIENT_TROPICAL_OVERRIDE;
+    private static final ForgeConfigSpec.BooleanValue ALLOW_CLIENT_APPEARANCE_OVERRIDE;
 
     static {
-        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
         builder.push("zones");
         ENABLED = builder
@@ -57,7 +57,6 @@ public final class AutumnServerConfig {
                 .defineListAllowEmpty(
                         "ranges",
                         List.of(),
-                        () -> "-18000,-9000,1500",
                         AutumnServerConfig::isRangeString
                 );
         builder.pop();

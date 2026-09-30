@@ -3,23 +3,32 @@ package dev.autumnfoliage;
 import dev.autumnfoliage.config.AutumnServerConfig;
 import dev.autumnfoliage.network.NetworkEvents;
 import dev.autumnfoliage.network.ServerGameEvents;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.config.ModConfig;
-import net.neoforged.neoforge.common.NeoForge;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 /**
- * Common entrypoint. The mod can be installed on a dedicated server, but it is not required there.
- * A server installation only supplies optional, authoritative coordinate-zone configuration.
+ * Forge 1.20.1 common entrypoint. The mod remains optional on dedicated servers; when present on
+ * the server it can provide authoritative coordinate-zone settings to clients that also have it.
  */
 @Mod(AutumnFoliage.MOD_ID)
 public final class AutumnFoliage {
     public static final String MOD_ID = "autumnfoliage";
 
-    public AutumnFoliage(IEventBus modBus, ModContainer container) {
-        container.registerConfig(ModConfig.Type.SERVER, AutumnServerConfig.SPEC);
-        modBus.addListener(NetworkEvents::registerPayloads);
-        NeoForge.EVENT_BUS.register(ServerGameEvents.class);
+    public AutumnFoliage() {
+        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        ModLoadingContext loadingContext = ModLoadingContext.get();
+
+        loadingContext.registerConfig(ModConfig.Type.SERVER, AutumnServerConfig.SPEC);
+
+        NetworkEvents.register();
+        MinecraftForge.EVENT_BUS.register(ServerGameEvents.class);
+
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> AutumnFoliageClient.init(modBus));
     }
 }

@@ -2,12 +2,12 @@ package dev.autumnfoliage.client;
 
 import dev.autumnfoliage.network.ServerZoneOverride;
 import net.minecraft.client.Minecraft;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.event.TagsUpdatedEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.TagsUpdatedEvent;
 
-/** Main NeoForge event-bus hooks that can change runtime coloring/classification. */
+/** Main Forge event-bus hooks that can change runtime coloring/classification. */
 public final class ClientGameEvents {
     private static int calendarCheckTicks;
 
@@ -26,7 +26,10 @@ public final class ClientGameEvents {
     }
 
     @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
         // The calendar only changes once per day. Check roughly once per second rather than doing
         // date/time work inside the hot block-color path. If midnight rolls over, rebuild nearby
         // chunks and DH render data so the new day's blend is actually visible.
