@@ -9,7 +9,13 @@ import net.minecraft.world.level.block.state.BlockState;
 public final class AutumnColorizer {
     private AutumnColorizer() {}
 
-    public static int color(BlockState state, BlockAndTintGetter level, BlockPos pos, int originalColor) {
+    public static int color(
+            BlockState state,
+            BlockAndTintGetter level,
+            BlockPos pos,
+            int originalColor,
+            int tintIndex
+    ) {
         if (level == null || pos == null) {
             return originalColor;
         }
@@ -17,7 +23,8 @@ public final class AutumnColorizer {
                 state,
                 pos,
                 originalColor,
-                VegetationClassifier.isTropicalBiome(level, pos)
+                VegetationClassifier.isTropicalBiome(level, pos),
+                tintIndex
         );
     }
 
@@ -46,7 +53,7 @@ public final class AutumnColorizer {
     }
 
     /**
-     * Compatibility path for Distant Horizons API 7.0.x (used by DH 3.2.x on Minecraft 1.21.4).
+     * Compatibility path for older Distant Horizons API implementations.
      * That API exposes the finished LOD color but not the separate untinted block-texture sample.
      * Convert the existing LOD color to neutral luminance before applying the autumn tint so the
      * original green biome tint does not muddy the result.
@@ -74,13 +81,9 @@ public final class AutumnColorizer {
             BlockState state,
             BlockPos pos,
             int originalColor,
-            boolean tropicalBiome
+            boolean tropicalBiome,
+            int tintIndex
     ) {
-        double zoneStrength = ZoneStrength.at(pos);
-        if (zoneStrength <= 0.0) {
-            return originalColor;
-        }
-
         VegetationType type = VegetationClassifier.classify(state);
         if (type == VegetationType.NONE) {
             return originalColor;
@@ -90,6 +93,29 @@ public final class AutumnColorizer {
         if (!settings.autumnalTropics() &&
                 (type == VegetationType.TROPICAL || tropicalBiome)) {
             return originalColor;
+        }
+
+        double zoneStrength = ZoneStrength.at(pos) * SeasonalTiming.strength(state, pos);
+        if (zoneStrength <= 0.0) {
+            return originalColor;
+        }
+
+        // Vanilla bamboo textures are pre-colored green, so the generic red/orange/gold leaf
+        // palette is not reliable: its gold variants can multiply into a result that still looks
+        // almost vanilla green. The model wrapper assigns every living bamboo quad to one of two
+        // explicit channels. Both use dedicated smooth-only palettes so neighboring bamboo does not
+        // jump across hard species-family boundaries.
+        if (VegetationClassifier.isBambooPlant(state)) {
+            double bambooStrength = zoneStrength * settings.leafStrength();
+            if (bambooStrength <= 0.0) {
+                return originalColor;
+            }
+
+            int bambooTarget = tintIndex == 1
+                    ? AutumnPalette.bambooStalkTarget(pos)
+                    : AutumnPalette.bambooLeafTarget(pos);
+            double channelStrength = tintIndex == 1 ? bambooStrength * 0.90 : bambooStrength;
+            return AutumnPalette.mix(0xFFFFFFFF, bambooTarget, channelStrength);
         }
 
         double categoryStrength = switch (type) {
@@ -106,7 +132,7 @@ public final class AutumnColorizer {
             return originalColor;
         }
 
-        // 1.21.4 expects ARGB. -1 is opaque white/no tint. Some older mod color handlers
+        // Minecraft 1.21.4 expects ARGB. -1 is opaque white/no tint. Some older mod color handlers
         // still return 24-bit RGB, so normalize those to opaque before blending.
         int base = normalizeArgb(originalColor);
         int target = AutumnPalette.target(type, state, pos);
@@ -130,11 +156,6 @@ public final class AutumnColorizer {
             int baseColor,
             boolean tropicalBiome
     ) {
-        double zoneStrength = ZoneStrength.at(pos);
-        if (zoneStrength <= 0.0) {
-            return originalColor;
-        }
-
         VegetationType type = VegetationClassifier.classify(state);
         if (type == VegetationType.NONE) {
             return originalColor;
@@ -144,6 +165,25 @@ public final class AutumnColorizer {
         if (!settings.autumnalTropics() &&
                 (type == VegetationType.TROPICAL || tropicalBiome)) {
             return originalColor;
+        }
+
+        double zoneStrength = ZoneStrength.at(pos) * SeasonalTiming.strength(state, pos);
+        if (zoneStrength <= 0.0) {
+            return originalColor;
+        }
+
+        // DH stores one representative color per block sample rather than separate model quads,
+        // so it cannot reproduce the near renderer's independent bamboo leaf/stalk channels. Use a
+        // dedicated composite bamboo tint that blends both channels instead of falling back to the
+        // generic tropical palette. This keeps distant bamboo visually aligned with nearby bamboo.
+        if (VegetationClassifier.isBambooPlant(state)) {
+            double finalStrength = zoneStrength * settings.leafStrength();
+            if (finalStrength <= 0.0) {
+                return originalColor;
+            }
+            int targetTint = AutumnPalette.bambooLodTarget(pos);
+            int targetRenderedColor = multiplyArgb(normalizeArgb(baseColor), targetTint);
+            return AutumnPalette.mix(normalizeArgb(originalColor), targetRenderedColor, finalStrength);
         }
 
         double categoryStrength = switch (type) {

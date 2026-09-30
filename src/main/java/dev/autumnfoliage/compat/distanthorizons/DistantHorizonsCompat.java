@@ -87,7 +87,7 @@ public final class DistantHorizonsCompat {
                                     biomeSerial
                             );
                         } catch (NoSuchMethodError | AbstractMethodError ignored) {
-                            // DH 3.2.x / API 7.0.x does not expose getBaseColorAsInt(). Keep the
+                            // Older DH API implementations do not expose getBaseColorAsInt(). Keep the
                             // integration working with a luminance-preserving approximation rather
                             // than disabling autumn LOD colors entirely.
                             recolored = AutumnColorizer.colorForDistantHorizonsLegacy(
@@ -119,7 +119,10 @@ public final class DistantHorizonsCompat {
                     public void afterDistantHorizonsInit(DhApiEventParam<Void> event) {
                         // Keep the cache invalidation on Minecraft's client thread. DH may fire
                         // its init event from loader/setup code rather than the render thread.
-                        Minecraft.getInstance().execute(DistantHorizonsCompat::refreshRenderData);
+                        Minecraft minecraft = Minecraft.getInstance();
+                        if (minecraft != null) {
+                            minecraft.execute(DistantHorizonsCompat::refreshRenderData);
+                        }
                     }
                 }
         );
@@ -140,8 +143,8 @@ public final class DistantHorizonsCompat {
             // reliable input for our tropical-biome keyword matcher.
             return biome.getSerialString();
         } catch (NoSuchMethodError | AbstractMethodError ignored) {
-            // DH API 7.0.x only exposes getName(). This is still sufficient for names such as
-            // jungle/rainforest/tropical and keeps 1.21.4 DH 3.2.x compatible.
+            // Older DH API implementations only expose getName(). This is still sufficient for names such as
+            // jungle/rainforest/tropical and keeps the integration tolerant of older API implementations.
             String name = biome.getName();
             return name == null ? "" : name;
         }

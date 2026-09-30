@@ -6,12 +6,42 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.time.MonthDay;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 /** Client preferences plus local fallback values used when no server policy is active or overrides are allowed. */
 public final class AutumnConfig {
     public static final ModConfigSpec SPEC;
+
+    private static final List<String> LEGACY_TROPICAL_KEYWORDS = List.of(
+            "jungle", "palm", "coconut", "banana", "tropical", "rainforest", "mangrove", "monsoon"
+    );
+    private static final List<String> PASS9_TROPICAL_KEYWORDS = List.of(
+            "jungle", "palm", "coconut", "banana", "bamboo", "tropical", "rainforest", "mangrove", "monsoon",
+            "mahogany", "teak", "ebony", "kapok", "ceiba", "banyan", "baobab", "rubber",
+            "mango", "papaya", "avocado", "guava", "cacao", "cocoa", "coffee", "plantain",
+            "breadfruit", "jackfruit", "lychee", "rambutan", "durian", "cashew", "tamarind"
+    );
+    private static final List<String> DEFAULT_TROPICAL_KEYWORDS = List.of(
+            "jungle", "palm", "palmetto", "bamboo", "tropical", "rainforest", "mangrove", "monsoon",
+            "mahogany", "teak", "ebony", "kapok", "ceiba", "banyan", "baobab", "rubber", "rattan", "liana"
+    );
+    private static final List<String> LEGACY_TROPICAL_BIOME_KEYWORDS = List.of(
+            "jungle", "rainforest", "tropical", "tropics", "monsoon", "mangrove"
+    );
+    private static final List<String> DEFAULT_TROPICAL_BIOME_KEYWORDS = List.of(
+            "jungle", "rainforest", "tropical", "tropics", "monsoon", "mangrove", "bamboo"
+    );
+    private static final List<String> DEFAULT_SPECIES_TIMING_OFFSETS = List.of(
+            "birch=-5", "aspen=-4", "maple=-3", "cherry=-2",
+            "oak=0", "elm=1", "beech=2", "willow=3"
+    );
+    private static final DateTimeFormatter MONTH_DAY_FORMAT = DateTimeFormatter.ofPattern("MM-dd", Locale.ROOT);
 
     private static final ModConfigSpec.BooleanValue ENABLED;
     private static final ModConfigSpec.EnumValue<Axis> AXIS;
@@ -27,6 +57,13 @@ public final class AutumnConfig {
     private static final ModConfigSpec.DoubleValue EVERGREEN_STRENGTH;
     private static final ModConfigSpec.BooleanValue AUTUMNAL_TROPICS;
     private static final ModConfigSpec.IntValue COLOR_PATCH_SIZE;
+
+    private static final ModConfigSpec.BooleanValue CALENDAR_TIMING_ENABLED;
+    private static final ModConfigSpec.ConfigValue<String> AUTUMN_START_DATE;
+    private static final ModConfigSpec.ConfigValue<String> AUTUMN_END_DATE;
+    private static final ModConfigSpec.IntValue SEASON_BLEND_DAYS;
+    private static final ModConfigSpec.IntValue SEASONAL_VARIATION_DAYS;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> SPECIES_TIMING_OFFSETS;
 
     private static final ModConfigSpec.ConfigValue<List<? extends String>> FORCE_INCLUDE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> FORCE_EXCLUDE;
@@ -113,6 +150,50 @@ public final class AutumnConfig {
                 .defineInRange("colorPatchSize", 10, 2, 64);
         builder.pop();
 
+        builder.push("season");
+        CALENDAR_TIMING_ENABLED = builder
+                .comment(
+                        "Use the computer's current local calendar date to fade autumn in and out.",
+                        "When disabled, autumn strength is controlled only by zones and vegetation settings.")
+                .translation("autumnfoliage.config.client.calendarTimingEnabled")
+                .define("calendarTimingEnabled", false);
+        AUTUMN_START_DATE = builder
+                .comment(
+                        "First day of the autumn transition, in MM-dd format.",
+                        "The effect fades from green toward full autumn during the configured blend time.")
+                .translation("autumnfoliage.config.client.autumnStartDate")
+                .define("autumnStartDate", "09-01", AutumnConfig::isMonthDayString);
+        AUTUMN_END_DATE = builder
+                .comment(
+                        "Final day of the autumn transition, in MM-dd format.",
+                        "The effect fades back out during the configured blend time before this date.",
+                        "Windows that cross New Year are supported.")
+                .translation("autumnfoliage.config.client.autumnEndDate")
+                .define("autumnEndDate", "11-30", AutumnConfig::isMonthDayString);
+        SEASON_BLEND_DAYS = builder
+                .comment("Days used for the gradual fade-in and fade-out at the start/end of the autumn period.")
+                .translation("autumnfoliage.config.client.seasonBlendDays")
+                .defineInRange("seasonBlendDays", 21, 0, 90);
+        SEASONAL_VARIATION_DAYS = builder
+                .comment(
+                        "Small deterministic local timing variation in days.",
+                        "This prevents every tree of a species changing on exactly the same day.")
+                .translation("autumnfoliage.config.client.seasonalVariationDays")
+                .defineInRange("seasonalVariationDays", 2, 0, 14);
+        SPECIES_TIMING_OFFSETS = builder
+                .comment(
+                        "Optional species timing offsets in days, format: keyword=days.",
+                        "Negative values begin/end earlier; positive values later.",
+                        "The most specific matching keyword wins, so dark_oak can override oak.")
+                .translation("autumnfoliage.config.client.speciesTimingOffsets")
+                .defineListAllowEmpty(
+                        "speciesTimingOffsets",
+                        DEFAULT_SPECIES_TIMING_OFFSETS,
+                        () -> "birch=-5",
+                        AutumnConfig::isSpeciesOffsetString
+                );
+        builder.pop();
+
         builder.push("compatibility");
         FORCE_INCLUDE = builder
                 .comment("Exact block ids to force into autumn processing, e.g. \"somemod:odd_tree_foliage\".")
@@ -136,7 +217,7 @@ public final class AutumnConfig {
                 .translation("autumnfoliage.config.client.tropicalKeywords")
                 .defineListAllowEmpty(
                         "tropicalKeywords",
-                        List.of("jungle", "palm", "coconut", "banana", "tropical", "rainforest", "mangrove", "monsoon"),
+                        DEFAULT_TROPICAL_KEYWORDS,
                         () -> "palm",
                         AutumnConfig::isSimpleString
                 );
@@ -147,7 +228,7 @@ public final class AutumnConfig {
                 .translation("autumnfoliage.config.client.tropicalBiomeKeywords")
                 .defineListAllowEmpty(
                         "tropicalBiomeKeywords",
-                        List.of("jungle", "rainforest", "tropical", "tropics", "monsoon", "mangrove"),
+                        DEFAULT_TROPICAL_BIOME_KEYWORDS,
                         () -> "rainforest",
                         AutumnConfig::isSimpleString
                 );
@@ -177,11 +258,17 @@ public final class AutumnConfig {
                 EVERGREEN_STRENGTH.get(),
                 AUTUMNAL_TROPICS.get(),
                 COLOR_PATCH_SIZE.get(),
+                CALENDAR_TIMING_ENABLED.get(),
+                AUTUMN_START_DATE.get(),
+                AUTUMN_END_DATE.get(),
+                SEASON_BLEND_DAYS.get(),
+                SEASONAL_VARIATION_DAYS.get(),
+                copyStrings(SPECIES_TIMING_OFFSETS.get()),
                 copyStrings(FORCE_INCLUDE.get()),
                 copyStrings(FORCE_EXCLUDE.get()),
                 copyStrings(EVERGREEN_KEYWORDS.get()),
-                copyStrings(TROPICAL_KEYWORDS.get()),
-                copyStrings(TROPICAL_BIOME_KEYWORDS.get())
+                effectiveTropicalKeywords(),
+                effectiveTropicalBiomeKeywords()
         );
     }
 
@@ -204,6 +291,12 @@ public final class AutumnConfig {
                 EVERGREEN_STRENGTH.getDefault(),
                 AUTUMNAL_TROPICS.getDefault(),
                 COLOR_PATCH_SIZE.getDefault(),
+                CALENDAR_TIMING_ENABLED.getDefault(),
+                AUTUMN_START_DATE.getDefault(),
+                AUTUMN_END_DATE.getDefault(),
+                SEASON_BLEND_DAYS.getDefault(),
+                SEASONAL_VARIATION_DAYS.getDefault(),
+                copyStrings(SPECIES_TIMING_OFFSETS.getDefault()),
                 copyStrings(FORCE_INCLUDE.getDefault()),
                 copyStrings(FORCE_EXCLUDE.getDefault()),
                 copyStrings(EVERGREEN_KEYWORDS.getDefault()),
@@ -228,6 +321,12 @@ public final class AutumnConfig {
         EVERGREEN_STRENGTH.set(snapshot.evergreenStrength());
         AUTUMNAL_TROPICS.set(snapshot.autumnalTropics());
         COLOR_PATCH_SIZE.set(snapshot.colorPatchSize());
+        CALENDAR_TIMING_ENABLED.set(snapshot.calendarTimingEnabled());
+        AUTUMN_START_DATE.set(snapshot.autumnStartDate());
+        AUTUMN_END_DATE.set(snapshot.autumnEndDate());
+        SEASON_BLEND_DAYS.set(snapshot.seasonBlendDays());
+        SEASONAL_VARIATION_DAYS.set(snapshot.seasonalVariationDays());
+        SPECIES_TIMING_OFFSETS.set(List.copyOf(snapshot.speciesTimingOffsets()));
         FORCE_INCLUDE.set(List.copyOf(snapshot.forceInclude()));
         FORCE_EXCLUDE.set(List.copyOf(snapshot.forceExclude()));
         EVERGREEN_KEYWORDS.set(List.copyOf(snapshot.evergreenKeywords()));
@@ -278,11 +377,17 @@ public final class AutumnConfig {
                 appearance.evergreenStrength(),
                 autumnalTropics,
                 appearance.colorPatchSize(),
+                CALENDAR_TIMING_ENABLED.get(),
+                AUTUMN_START_DATE.get(),
+                AUTUMN_END_DATE.get(),
+                SEASON_BLEND_DAYS.get(),
+                SEASONAL_VARIATION_DAYS.get(),
+                parsedSpeciesTimingOffsets(SPECIES_TIMING_OFFSETS.get()),
                 normalizedSet(FORCE_INCLUDE.get()),
                 normalizedSet(FORCE_EXCLUDE.get()),
                 normalizedList(EVERGREEN_KEYWORDS.get()),
-                normalizedList(TROPICAL_KEYWORDS.get()),
-                normalizedList(TROPICAL_BIOME_KEYWORDS.get())
+                normalizedList(effectiveTropicalKeywords()),
+                normalizedList(effectiveTropicalBiomeKeywords())
         );
     }
 
@@ -337,6 +442,59 @@ public final class AutumnConfig {
         return value instanceof String s && !s.isBlank();
     }
 
+    private static boolean isMonthDayString(Object value) {
+        if (!(value instanceof String s) || s.length() != 5) return false;
+        try {
+            MonthDay.parse(s, MONTH_DAY_FORMAT);
+            return true;
+        } catch (DateTimeParseException ignored) {
+            return false;
+        }
+    }
+
+    private static boolean isSpeciesOffsetString(Object value) {
+        if (!(value instanceof String raw)) return false;
+        String[] parts = raw.trim().split("=", -1);
+        if (parts.length != 2 || parts[0].isBlank()) return false;
+        try {
+            int days = Integer.parseInt(parts[1].trim());
+            return days >= -30 && days <= 30;
+        } catch (NumberFormatException ignored) {
+            return false;
+        }
+    }
+
+    private static Map<String, Integer> parsedSpeciesTimingOffsets(List<? extends String> values) {
+        Map<String, Integer> out = new LinkedHashMap<>();
+        for (String raw : values) {
+            String[] parts = raw.trim().toLowerCase(Locale.ROOT).split("=", -1);
+            if (parts.length != 2 || parts[0].isBlank()) continue;
+            try {
+                int days = Math.max(-30, Math.min(30, Integer.parseInt(parts[1].trim())));
+                out.put(parts[0].trim(), days);
+            } catch (NumberFormatException ignored) {
+                // Invalid hand-edited entries are ignored at runtime; the config validator rejects new ones.
+            }
+        }
+        return Map.copyOf(out);
+    }
+
+
+    private static List<String> effectiveTropicalKeywords() {
+        List<String> configured = normalizedList(TROPICAL_KEYWORDS.get());
+        if (configured.equals(LEGACY_TROPICAL_KEYWORDS) || configured.equals(PASS9_TROPICAL_KEYWORDS)) {
+            return DEFAULT_TROPICAL_KEYWORDS;
+        }
+        return configured;
+    }
+
+    private static List<String> effectiveTropicalBiomeKeywords() {
+        List<String> configured = normalizedList(TROPICAL_BIOME_KEYWORDS.get());
+        if (configured.equals(LEGACY_TROPICAL_BIOME_KEYWORDS)) {
+            return DEFAULT_TROPICAL_BIOME_KEYWORDS;
+        }
+        return configured;
+    }
 
     private static List<String> copyStrings(List<? extends String> values) {
         return values.stream().map(String::valueOf).toList();

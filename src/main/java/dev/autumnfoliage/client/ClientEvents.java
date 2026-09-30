@@ -29,7 +29,7 @@ public final class ClientEvents {
         BlockColor autumnAware = (state, level, pos, tintIndex) -> {
             BlockColor original = ORIGINAL_BLOCK_COLORS.get(state.getBlock());
             int baseColor = original == null ? -1 : original.getColor(state, level, pos, tintIndex);
-            return AutumnColorizer.color(state, level, pos, baseColor);
+            return AutumnColorizer.color(state, level, pos, baseColor, tintIndex);
         };
 
         Block[] allBlocks = BuiltInRegistries.BLOCK.stream().toArray(Block[]::new);
@@ -38,10 +38,8 @@ public final class ClientEvents {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onModifyBakingResult(ModelEvent.ModifyBakingResult event) {
-        // 1.21.4 separates item models from block-state baked models. Modify only the block-state
-        // model map: this keeps Create and other custom item renderers completely untouched while
-        // still allowing otherwise-untinted foliage quads to participate in the BlockColor pipeline.
-        // The event fires on a model-reload worker thread, so do not access live client state here.
+        // Minecraft 1.21.4 still renders blocks through BakedModel. Wrap only block-state models;
+        // item models and custom item renderers remain untouched.
         event.getBakingResult().blockStateModels().replaceAll((location, model) ->
                 model instanceof TintForcingBakedModel ? model : new TintForcingBakedModel(model)
         );
@@ -62,9 +60,15 @@ public final class ClientEvents {
     }
 
     public static void refreshRendering() {
+        // Config Loading can fire before Minecraft has constructed its client singleton.
         AutumnConfig.refresh();
         VegetationClassifier.clearCache();
+
         Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft == null) {
+            return;
+        }
+
         minecraft.execute(() -> {
             if (minecraft.levelRenderer != null) {
                 minecraft.levelRenderer.allChanged();

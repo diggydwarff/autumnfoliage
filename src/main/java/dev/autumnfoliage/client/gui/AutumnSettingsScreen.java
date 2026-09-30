@@ -1,6 +1,7 @@
 package dev.autumnfoliage.client.gui;
 
 import dev.autumnfoliage.client.ClientEvents;
+import dev.autumnfoliage.client.SeasonalTiming;
 import dev.autumnfoliage.config.AutumnConfig;
 import dev.autumnfoliage.config.AutumnRange;
 import dev.autumnfoliage.config.AutumnServerConfig;
@@ -72,7 +73,7 @@ public final class AutumnSettingsScreen extends Screen {
         panelLeft = (this.width - panelWidth) / 2;
         panelRight = panelLeft + panelWidth;
 
-        compactLayout = this.height < 290;
+        compactLayout = this.height < 330;
         contentTop = compactLayout ? 70 : 80;
         rowHeight = compactLayout ? 23 : 36;
         footerY = this.height - 28;
@@ -83,6 +84,7 @@ public final class AutumnSettingsScreen extends Screen {
             case GENERAL -> addGeneralPage();
             case COLORS -> addColorsPage();
             case VEGETATION -> addVegetationPage();
+            case SEASON -> addSeasonPage();
             case REGIONS -> addRegionsPage();
             case ADVANCED -> addAdvancedPage();
         }
@@ -93,8 +95,9 @@ public final class AutumnSettingsScreen extends Screen {
     private void addTabs(int panelWidth) {
         int tabWidth = (panelWidth - TAB_GAP * (Page.values().length - 1)) / Page.values().length;
         int x = panelLeft;
+        boolean shortTabs = panelWidth < 420;
         for (Page candidate : Page.values()) {
-            Button button = Button.builder(Component.literal(candidate.label), b -> {
+            Button button = Button.builder(Component.literal(shortTabs ? candidate.shortLabel : candidate.label), b -> {
                         page = candidate;
                         rangePage = 0;
                         rebuildWidgets();
@@ -230,6 +233,68 @@ public final class AutumnSettingsScreen extends Screen {
         addDoubleSliderRow(y, "Evergreens", "Evergreen strength.",
                 locked ? runtime.evergreenStrength() : draft.evergreenStrength, 0.0, 1.0, locked,
                 value -> draft.evergreenStrength = value, AutumnSettingsScreen::percent);
+    }
+
+    private void addSeasonPage() {
+        int y = contentTop;
+        java.time.LocalDate today = SeasonalTiming.currentDate();
+        String todayText = today.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, Locale.ENGLISH)
+                + " " + today.getDayOfMonth() + ", " + today.getYear();
+
+        y = addToggleRow(
+                y,
+                "Calendar Season",
+                "Use local date (today " + todayText + ").",
+                draft.calendarTimingEnabled,
+                false,
+                value -> draft.calendarTimingEnabled = value
+        );
+
+        rowText.add(new RowText(y, "Season Dates", "Start/end of the real-world autumn window.", false));
+        String dateLabel = SeasonalTiming.displayMonthDay(draft.autumnStartDate)
+                + " → " + SeasonalTiming.displayMonthDay(draft.autumnEndDate);
+        addRenderableWidget(Button.builder(Component.literal(dateLabel), b ->
+                        Minecraft.getInstance().setScreen(new SeasonDateEditorScreen(this,
+                                draft.autumnStartDate, draft.autumnEndDate, (start, end) -> {
+                            draft.autumnStartDate = start;
+                            draft.autumnEndDate = end;
+                        })))
+                .bounds(panelRight - CONTROL_WIDTH, controlY(y), CONTROL_WIDTH, 20)
+                .build());
+        y += rowHeight;
+
+        y = addIntSliderRow(
+                y,
+                "Blend Time",
+                "Fade-in/out duration at each end.",
+                draft.seasonBlendDays,
+                0,
+                90,
+                false,
+                value -> draft.seasonBlendDays = value,
+                value -> value + (value == 1 ? " day" : " days")
+        );
+
+        y = addIntSliderRow(
+                y,
+                "Local Variation",
+                "Small timing differences between stands.",
+                draft.seasonalVariationDays,
+                0,
+                14,
+                false,
+                value -> draft.seasonalVariationDays = value,
+                value -> "±" + value + (value == 1 ? " day" : " days")
+        );
+
+        addListEditorRow(
+                y,
+                "Species Timing",
+                "Small earlier/later offsets by tree name.",
+                StringListEditorScreen.Kind.SPECIES_TIMING_OFFSETS,
+                draft.speciesTimingOffsets
+        );
+
     }
 
     private void addRegionsPage() {
@@ -430,6 +495,7 @@ public final class AutumnSettingsScreen extends Screen {
             case EVERGREEN_KEYWORDS -> defaults.evergreenKeywords();
             case TROPICAL_KEYWORDS -> defaults.tropicalKeywords();
             case TROPICAL_BIOME_KEYWORDS -> defaults.tropicalBiomeKeywords();
+            case SPECIES_TIMING_OFFSETS -> defaults.speciesTimingOffsets();
         };
     }
 
@@ -475,6 +541,14 @@ public final class AutumnSettingsScreen extends Screen {
                     draft.evergreenStrength = defaults.evergreenStrength();
                 }
             }
+            case SEASON -> {
+                draft.calendarTimingEnabled = defaults.calendarTimingEnabled();
+                draft.autumnStartDate = defaults.autumnStartDate();
+                draft.autumnEndDate = defaults.autumnEndDate();
+                draft.seasonBlendDays = defaults.seasonBlendDays();
+                draft.seasonalVariationDays = defaults.seasonalVariationDays();
+                replace(draft.speciesTimingOffsets, defaults.speciesTimingOffsets());
+            }
             case REGIONS -> {
                 if (!serverLocksZones()) {
                     draft.axis = defaults.axis();
@@ -499,6 +573,7 @@ public final class AutumnSettingsScreen extends Screen {
         return switch (page) {
             case GENERAL -> !serverLocksEnabled() || !serverLocksTropics();
             case COLORS, VEGETATION -> !serverLocksAppearance();
+            case SEASON -> true;
             case REGIONS -> !serverLocksZones();
             case ADVANCED -> true;
         };
@@ -530,8 +605,6 @@ public final class AutumnSettingsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // In 1.21.x the blurred in-world background can be resolved while widget rendering is flushed.
-        // Draw all foreground text after super.render() so labels never get caught in that blur pass.
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         int panelTop = Math.max(64, contentTop - 6);
@@ -540,32 +613,32 @@ public final class AutumnSettingsScreen extends Screen {
 
         super.render(graphics, mouseX, mouseY, partialTick);
 
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, compactLayout ? 12 : 16, 0xFFFFFF);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, compactLayout ? 12 : 16, 0xFFFFFFFF);
         String status;
         int statusColor;
         if (integratedOwner) {
             status = "Singleplayer world - all world settings are editable.";
-            statusColor = 0xB8E6B8;
+            statusColor = 0xFFB8E6B8;
         } else if (ServerZoneOverride.isActive()) {
             status = "Server policy active - locked values are marked Server.";
-            statusColor = 0xF0C674;
+            statusColor = 0xFFF0C674;
         } else {
             status = "Local client settings";
-            statusColor = 0xD0D0D0;
+            statusColor = 0xFFD0D0D0;
         }
         graphics.drawCenteredString(this.font, status, this.width / 2, compactLayout ? 26 : 30, statusColor);
 
         if (!pageMessage.isBlank()) {
-            graphics.drawString(this.font, pageMessage, panelLeft, contentTop + rowHeight, 0xD0D0D0, false);
+            graphics.drawString(this.font, pageMessage, panelLeft, contentTop + rowHeight, 0xFFD0D0D0, false);
         }
 
         for (RowText row : rowText) {
             int x = row.xOverride >= 0 ? row.xOverride : panelLeft;
-            int labelColor = row.locked ? 0xB8B8B8 : 0xFFFFFF;
+            int labelColor = row.locked ? 0xFFB8B8B8 : 0xFFFFFFFF;
             int labelY = row.y + (compactLayout ? 7 : 2);
             graphics.drawString(this.font, row.label, x, labelY, labelColor, false);
             if (!compactLayout && !row.description.isBlank()) {
-                graphics.drawString(this.font, row.description, x, row.y + 15, 0xC0C0C0, false);
+                graphics.drawString(this.font, row.description, x, row.y + 15, 0xFFC0C0C0, false);
             }
         }
     }
@@ -592,16 +665,19 @@ public final class AutumnSettingsScreen extends Screen {
     }
 
     private enum Page {
-        GENERAL("General"),
-        COLORS("Colors"),
-        VEGETATION("Plants"),
-        REGIONS("Regions"),
-        ADVANCED("Advanced");
+        GENERAL("General", "Main"),
+        COLORS("Colors", "Color"),
+        VEGETATION("Plants", "Plants"),
+        SEASON("Season", "Season"),
+        REGIONS("Regions", "Areas"),
+        ADVANCED("Advanced", "Adv.");
 
         private final String label;
+        private final String shortLabel;
 
-        Page(String label) {
+        Page(String label, String shortLabel) {
             this.label = label;
+            this.shortLabel = shortLabel;
         }
     }
 
@@ -619,6 +695,12 @@ public final class AutumnSettingsScreen extends Screen {
         private double evergreenStrength;
         private boolean autumnalTropics;
         private int colorPatchSize;
+        private boolean calendarTimingEnabled;
+        private String autumnStartDate;
+        private String autumnEndDate;
+        private int seasonBlendDays;
+        private int seasonalVariationDays;
+        private final List<String> speciesTimingOffsets;
         private final List<String> forceInclude;
         private final List<String> forceExclude;
         private final List<String> evergreenKeywords;
@@ -639,6 +721,12 @@ public final class AutumnSettingsScreen extends Screen {
             evergreenStrength = source.evergreenStrength();
             autumnalTropics = source.autumnalTropics();
             colorPatchSize = source.colorPatchSize();
+            calendarTimingEnabled = source.calendarTimingEnabled();
+            autumnStartDate = source.autumnStartDate();
+            autumnEndDate = source.autumnEndDate();
+            seasonBlendDays = source.seasonBlendDays();
+            seasonalVariationDays = source.seasonalVariationDays();
+            speciesTimingOffsets = new ArrayList<>(source.speciesTimingOffsets());
             forceInclude = new ArrayList<>(source.forceInclude());
             forceExclude = new ArrayList<>(source.forceExclude());
             evergreenKeywords = new ArrayList<>(source.evergreenKeywords());
@@ -667,6 +755,8 @@ public final class AutumnSettingsScreen extends Screen {
                     enabled, axis, List.copyOf(ranges), forceTintUntintedModels,
                     leafStrength, foliageVibrancy, foliageBrightness, saplingStrength, grassStrength,
                     vineAndShrubStrength, evergreenStrength, autumnalTropics, colorPatchSize,
+                    calendarTimingEnabled, autumnStartDate, autumnEndDate, seasonBlendDays, seasonalVariationDays,
+                    List.copyOf(speciesTimingOffsets),
                     List.copyOf(forceInclude), List.copyOf(forceExclude), List.copyOf(evergreenKeywords),
                     List.copyOf(tropicalKeywords), List.copyOf(tropicalBiomeKeywords)
             );

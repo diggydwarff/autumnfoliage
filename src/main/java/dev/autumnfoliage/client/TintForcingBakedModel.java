@@ -4,20 +4,23 @@ import dev.autumnfoliage.config.AutumnConfig;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.DelegateBakedModel;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.client.resources.model.DelegateBakedModel;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Makes otherwise-untinted vegetation quads participate in the standard BlockColor pipeline.
- * This wrapper is installed only on the block-state model map. The runtime BlockState then decides
- * whether a quad needs forced tinting; non-vegetation block models are returned untouched.
+ *
+ * Minecraft 1.21.4 still uses BakedModel for block rendering. Normal vegetation gets tint index 0
+ * only on otherwise-untinted quads. Living bamboo is handled specially: every bamboo quad is routed
+ * by its actual sprite so stalks use tint index 1 and leaf/sapling geometry uses tint index 0.
  */
 public final class TintForcingBakedModel extends DelegateBakedModel {
     public TintForcingBakedModel(BakedModel originalModel) {
@@ -48,6 +51,15 @@ public final class TintForcingBakedModel extends DelegateBakedModel {
         }
 
         VegetationType type = VegetationClassifier.classify(state);
+
+        if (VegetationClassifier.isBambooPlant(state)) {
+            if (type == VegetationType.NONE ||
+                    (type == VegetationType.TROPICAL && !AutumnConfig.runtime().autumnalTropics())) {
+                return quads;
+            }
+            return tintBambooQuads(quads);
+        }
+
         if (!VegetationClassifier.canForceTintWholeModel(state, type)) {
             return quads;
         }
@@ -68,16 +80,30 @@ public final class TintForcingBakedModel extends DelegateBakedModel {
             if (quad.isTinted()) {
                 out.add(quad);
             } else {
-                out.add(new BakedQuad(
-                        quad.getVertices(),
-                        0,
-                        quad.getDirection(),
-                        quad.getSprite(),
-                        quad.isShade(),
-                        quad.getLightEmission()
-                ));
+                out.add(withTintIndex(quad, 0));
             }
         }
         return out;
+    }
+
+    private static List<BakedQuad> tintBambooQuads(List<BakedQuad> quads) {
+        List<BakedQuad> out = new ArrayList<>(quads.size());
+        for (BakedQuad quad : quads) {
+            String spritePath = quad.getSprite().contents().name().getPath().toLowerCase(Locale.ROOT);
+            int tintIndex = spritePath.contains("bamboo_stalk") ? 1 : 0;
+            out.add(withTintIndex(quad, tintIndex));
+        }
+        return out;
+    }
+
+    private static BakedQuad withTintIndex(BakedQuad quad, int tintIndex) {
+        return new BakedQuad(
+                quad.getVertices(),
+                tintIndex,
+                quad.getDirection(),
+                quad.getSprite(),
+                quad.isShade(),
+                quad.getLightEmission()
+        );
     }
 }
