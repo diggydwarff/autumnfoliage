@@ -16,20 +16,23 @@ import java.util.function.Consumer;
 /** Player-friendly one-item-per-row editor for compatibility lists. */
 final class StringListEditorScreen extends Screen {
     enum Kind {
-        FORCE_INCLUDE("Force Include Blocks", "Exact block IDs Autumn Foliage should always process.", true),
-        FORCE_EXCLUDE("Force Exclude Blocks", "Exact block IDs that should never be recolored.", true),
-        EVERGREEN_KEYWORDS("Evergreen Keywords", "Name fragments used to recognize conifers and evergreens.", false),
-        TROPICAL_KEYWORDS("Tropical Block Keywords", "Name fragments used to recognize tropical vegetation.", false),
-        TROPICAL_BIOME_KEYWORDS("Tropical Biome Keywords", "Biome name fragments treated as tropical when Autumnal Tropics is off.", false);
+        FORCE_INCLUDE("Force Include Blocks", "Exact block IDs Autumn Foliage should always process.", true, false),
+        FORCE_EXCLUDE("Force Exclude Blocks", "Exact block IDs that should never be recolored.", true, false),
+        EVERGREEN_KEYWORDS("Evergreen Keywords", "Name fragments used to recognize conifers and evergreens.", false, false),
+        TROPICAL_KEYWORDS("Tropical Block Keywords", "Name fragments used to recognize tropical vegetation.", false, false),
+        TROPICAL_BIOME_KEYWORDS("Tropical Biome Keywords", "Biome name fragments treated as tropical when Autumnal Tropics is off.", false, false),
+        SPECIES_TIMING_OFFSETS("Species Timing Offsets", "Tree-name timing offsets in days, e.g. birch=-5 or oak=2.", false, true);
 
         final String title;
         final String description;
         final boolean resourceIds;
+        final boolean timingOffsets;
 
-        Kind(String title, String description, boolean resourceIds) {
+        Kind(String title, String description, boolean resourceIds, boolean timingOffsets) {
             this.title = title;
             this.description = description;
             this.resourceIds = resourceIds;
+            this.timingOffsets = timingOffsets;
         }
     }
 
@@ -157,6 +160,11 @@ final class StringListEditorScreen extends Screen {
                 saveButton.active = false;
                 return;
             }
+            if (kind.timingOffsets && !isTimingOffset(value)) {
+                validationMessage = "Invalid timing offset: " + value + "  (use keyword=days, -30 to 30)";
+                saveButton.active = false;
+                return;
+            }
         }
         validationMessage = "";
         saveButton.active = true;
@@ -173,6 +181,17 @@ final class StringListEditorScreen extends Screen {
         }
         onSave.accept(List.copyOf(cleaned));
         Minecraft.getInstance().setScreen(parent);
+    }
+
+    private static boolean isTimingOffset(String value) {
+        String[] parts = value.trim().split("=", -1);
+        if (parts.length != 2 || parts[0].isBlank()) return false;
+        try {
+            int days = Integer.parseInt(parts[1].trim());
+            return days >= -30 && days <= 30;
+        } catch (NumberFormatException ignored) {
+            return false;
+        }
     }
 
     private static boolean isResourceId(String value) {

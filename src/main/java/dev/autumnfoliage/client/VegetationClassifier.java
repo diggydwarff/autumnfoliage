@@ -102,11 +102,19 @@ public final class VegetationClassifier {
             return false;
         }
 
+        String path = blockPath(state);
+
+        // Bamboo is a multipart model: its stalk quads are intentionally untinted while the
+        // small/large leaf models already carry tint index 0. Never force-tint the whole model,
+        // otherwise opting bamboo into autumn processing would recolor the stalk as well.
+        if (isBambooPlant(path)) {
+            return false;
+        }
+
         if (type != VegetationType.GRASS_FERN) {
             return true;
         }
 
-        String path = blockPath(state);
         return !(path.contains("grass_block") ||
                 path.endsWith("_turf") ||
                 path.startsWith("turf_") ||
@@ -145,6 +153,20 @@ public final class VegetationClassifier {
             return VegetationType.DECIDUOUS_LEAVES;
         }
 
+        // Vanilla bamboo is unusual: the block id represents both the untinted stalk and
+        // tint-indexed leaf model parts. Keep it excluded by default, but allow the user's
+        // Tropical Block Keywords or Force Include settings to opt the actual plant in.
+        // Bamboo building blocks (planks, fences, doors, etc.) still remain excluded.
+        if (isBambooPlant(path)) {
+            if (forced) {
+                return VegetationType.DECIDUOUS_LEAVES;
+            }
+            if (tropical) {
+                return VegetationType.TROPICAL;
+            }
+            return VegetationType.NONE;
+        }
+
         if (forced) {
             return VegetationType.DECIDUOUS_LEAVES;
         }
@@ -168,7 +190,8 @@ public final class VegetationClassifier {
         }
 
         if (path.contains("vine") || path.contains("shrub") || path.contains("bush") ||
-                path.contains("hedge") || path.contains("bramble") || path.contains("groundcover")) {
+                path.contains("hedge") || path.contains("bramble") || path.contains("groundcover") ||
+                path.contains("liana") || path.contains("rattan")) {
             return tropical ? VegetationType.TROPICAL : VegetationType.VINE_SHRUB;
         }
 
@@ -185,6 +208,14 @@ public final class VegetationClassifier {
                 path.contains("needles") ||
                 path.contains("needle_leaves") ||
                 path.contains("frond");
+    }
+
+    static boolean isBambooPlant(BlockState state) {
+        return isBambooPlant(blockPath(state));
+    }
+
+    private static boolean isBambooPlant(String path) {
+        return path.equals("bamboo") || path.equals("bamboo_sapling");
     }
 
     private static boolean isHardExcluded(String path) {

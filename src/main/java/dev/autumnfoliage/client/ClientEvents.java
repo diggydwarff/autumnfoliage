@@ -29,7 +29,7 @@ public final class ClientEvents {
         BlockColor autumnAware = (state, level, pos, tintIndex) -> {
             BlockColor original = ORIGINAL_BLOCK_COLORS.get(state.getBlock());
             int baseColor = original == null ? -1 : original.getColor(state, level, pos, tintIndex);
-            return AutumnColorizer.color(state, level, pos, baseColor);
+            return AutumnColorizer.color(state, level, pos, baseColor, tintIndex);
         };
 
         Block[] allBlocks = BuiltInRegistries.BLOCK.stream().toArray(Block[]::new);

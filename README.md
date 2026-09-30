@@ -5,6 +5,11 @@ Autumn Foliage is a NeoForge 1.21.8 client-side vegetation renderer that applies
 It was developed using the supplied **Autumnpack 3.0** resource pack as a visual reference, but replaces per-texture compatibility work with runtime vegetation detection, configurable color treatment, coordinate regions and optional server policy.
 
 
+
+### Bamboo
+
+Vanilla `minecraft:bamboo` is treated as tropical vegetation. Its living model is split by texture sprite: leaf/sapling textures and `bamboo_stalk` use separate bamboo-specific autumn multipliers. Because vanilla bamboo textures are already green, these palettes deliberately suppress green and vary smoothly in world space instead of using the normal hard red/orange/gold tree-family regions. Bamboo building blocks such as planks, fences, doors, mosaics, and stripped bamboo blocks are not recolored.
+
 ## Compatibility
 
 - **Minecraft:** 1.21.8
@@ -30,7 +35,9 @@ For release checks, `scripts/test-neoforge-compat.ps1` compiles the same source 
 - Any number of coordinate ranges is supported; no ranges means autumn applies everywhere.
 - Client-only installation is supported; the server does not require the mod.
 - Optional server installation can enforce world climate/appearance settings while selectively allowing client overrides.
-- Native Distant Horizons LOD recoloring so distant foliage follows the same autumn system.
+- Native Distant Horizons LOD recoloring so distant foliage follows the same autumn system, including a dedicated blended bamboo LOD tint.
+- Optional real-world calendar season that fades autumn in/out across configurable dates instead of switching instantly.
+- Small configurable per-species timing offsets and local timing variation keep entire forests from changing on the exact same day.
 - Distant Horizons is included only in the development `runClient` environment and is not an end-user dependency.
 - Custom item renderers are left untouched. Autumn Foliage only wraps block-state models/model parts for untinted-vegetation fallback, avoiding conflicts with mods such as Create that depend on their own item rendering implementations.
 
@@ -40,7 +47,7 @@ Open **Mods -> Autumn Foliage -> Config**.
 
 The mod uses a purpose-built settings screen rather than exposing raw TOML-style values. Normal options are presented as toggles, sliders and focused editors, with the layout adapting to smaller GUI heights so controls do not overlap the footer. Settings are rendered over a subtle dark content panel and foreground labels are drawn after Minecraft's blurred menu pass so text stays crisp and readable at different GUI scales.
 
-The screen is divided into five simple tabs. **Save & Close** commits the draft and refreshes nearby chunks and Distant Horizons render data immediately; **Cancel** discards unsaved changes. On smaller GUI heights, descriptions are condensed so the controls remain usable without overlapping.
+The screen is divided into six simple tabs. **Save & Close** commits the draft and refreshes nearby chunks and Distant Horizons render data immediately; **Cancel** discards unsaved changes. On smaller GUI heights, descriptions are condensed so the controls remain usable without overlapping.
 
 ### General
 
@@ -65,6 +72,32 @@ Separate strength sliders are provided for:
 - evergreens
 
 All strengths are shown as percentages instead of raw decimal values.
+
+### Season
+
+Calendar timing is optional and disabled by default so existing installations keep the normal always-autumn behavior. When enabled, Autumn Foliage reads the client computer's **local calendar date** and multiplies it into the normal zone/vegetation strength.
+
+- **Autumn Starts** - first day where the seasonal fade begins.
+- **Autumn Ends** - final day of the fade-out.
+- **Blend Time** - number of days used at both ends of the season for gradual transitions.
+- **Local Variation** - small deterministic +/- day variation between nearby stands so a forest does not change all at once.
+- **Species Timing** - editable `keyword=days` offsets. Negative values shift a species earlier and positive values later. The most-specific matching block-name keyword wins.
+
+Default species offsets are deliberately subtle: birch/aspen/maple begin a few days earlier than oak, while beech/willow begin a few days later. Modded species can be added by name fragment. Date windows that cross New Year are supported.
+
+Example:
+
+```toml
+[season]
+calendarTimingEnabled = true
+autumnStartDate = "09-01"
+autumnEndDate = "11-30"
+seasonBlendDays = 21
+seasonalVariationDays = 2
+speciesTimingOffsets = ["birch=-5", "maple=-3", "oak=0", "beech=2"]
+```
+
+The calendar is evaluated client-side. The cached date is checked once per second; when the local day changes, nearby chunks and Distant Horizons render data are refreshed automatically.
 
 ### Regions
 
@@ -152,9 +185,9 @@ Patch Size:      10 blocks
 
 ## Distant Horizons
 
-Distant Horizons is optional. When present, Autumn Foliage registers a DH block-color override for detected vegetation so LOD foliage uses the same coordinate zones, tropical policy, category strengths and deterministic palette as nearby chunks.
+Distant Horizons is optional. When present, Autumn Foliage registers a DH block-color override for detected vegetation so LOD foliage uses the same coordinate zones, calendar-season strength, tropical policy, category strengths and deterministic palette as nearby chunks.
 
-For the supported DH 3.3.2+ line, Autumn Foliage uses DH's representative untinted block color directly when available, giving LOD foliage the closest match to Minecraft's normal texture-and-tint path. A legacy fallback remains in the code for older API implementations, but DH 3.3.2+ is the supported 1.21.8 runtime combination.
+For the supported DH 3.3.2+ line, Autumn Foliage uses DH's representative untinted block color directly when available, giving LOD foliage the closest match to Minecraft's normal texture-and-tint path. Distant Horizons represents a bamboo block with one sampled color rather than Minecraft's separate leaf/stalk model quads, so bamboo LODs use a dedicated composite of the bamboo leaf and stalk palettes. A legacy fallback remains in the code for older API implementations, but DH 3.3.2+ is the supported 1.21.8 runtime combination.
 
 Changing Autumn Foliage settings asks Distant Horizons to rebuild its visible render-data cache so already-generated green LODs do not remain on screen. The underlying DH terrain/full-data database is not deleted.
 
@@ -166,9 +199,12 @@ NeoForge 1.21.8 enables its Blaze3D validation wrapper in development. Distant H
 
 The GUI is the recommended way to change client settings, but the underlying files remain normal NeoForge TOML configs:
 
-- `autumnfoliage-client.toml` - local appearance, regions and compatibility settings
+- `autumnfoliage-client.toml` - local appearance, calendar season, regions and compatibility settings
 - `autumnfoliage-server.toml` - optional server policy and client-override permissions
 
 ## Notes
 
 Autumn Foliage is a rendering mod. It does not replace blocks, modify biomes, change world generation or write seasonal state into the save.
+
+- Bamboo compatibility: `bamboo` is a default tropical keyword. Vanilla bamboo leaf/sapling quads and stalk quads are explicitly routed to separate bamboo-specific tint channels. Their palettes use smooth variation only and stronger green suppression so pre-colored vanilla bamboo cannot randomly appear unchanged beside autumn-tinted plants. Existing configs that still contain either of the older unmodified default keyword lists are automatically migrated to the current defaults.
+- Tropical block defaults intentionally stay foliage/vegetation-focused: jungle, palm/palmetto, bamboo, mangrove, mahogany, teak, ebony, kapok/ceiba, banyan, baobab, rubber, rattan and liana. Fruit, vegetable and crop names are not included by default.

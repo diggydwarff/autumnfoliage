@@ -1,6 +1,7 @@
 package dev.autumnfoliage.config;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public record RuntimeSettings(
@@ -17,6 +18,12 @@ public record RuntimeSettings(
         double evergreenStrength,
         boolean autumnalTropics,
         int colorPatchSize,
+        boolean calendarTimingEnabled,
+        String autumnStartDate,
+        String autumnEndDate,
+        int seasonBlendDays,
+        int seasonalVariationDays,
+        Map<String, Integer> speciesTimingOffsets,
         Set<String> forceInclude,
         Set<String> forceExclude,
         List<String> evergreenKeywords,
@@ -38,11 +45,27 @@ public record RuntimeSettings(
                 0.10,
                 false,
                 10,
+                false,
+                "09-01",
+                "11-30",
+                21,
+                2,
+                Map.of(
+                        "birch", -5,
+                        "aspen", -4,
+                        "maple", -3,
+                        "cherry", -2,
+                        "oak", 0,
+                        "elm", 1,
+                        "beech", 2,
+                        "willow", 3
+                ),
                 Set.of(),
                 Set.of(),
                 List.of("spruce", "pine", "fir", "cedar", "redwood", "sequoia", "cypress", "juniper", "hemlock", "conifer", "evergreen"),
-                List.of("jungle", "palm", "coconut", "banana", "tropical", "rainforest", "mangrove", "monsoon"),
-                List.of("jungle", "rainforest", "tropical", "tropics", "monsoon", "mangrove")
+                List.of("jungle", "palm", "palmetto", "bamboo", "tropical", "rainforest", "mangrove", "monsoon",
+                        "mahogany", "teak", "ebony", "kapok", "ceiba", "banyan", "baobab", "rubber", "rattan", "liana"),
+                List.of("jungle", "rainforest", "tropical", "tropics", "monsoon", "mangrove", "bamboo")
         );
     }
 }

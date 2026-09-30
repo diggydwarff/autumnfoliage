@@ -7,8 +7,8 @@ ranges = []
 [rendering]
 forceTintUntintedModels = true
 leafStrength = 1.0
-foliageVibrancy = 1.25
-foliageBrightness = 1.12
+foliageVibrancy = 1.35
+foliageBrightness = 1.20
 saplingStrength = 0.9
 grassStrength = 0.46
 vineAndShrubStrength = 0.72
@@ -16,9 +16,21 @@ evergreenStrength = 0.10
 autumnalTropics = false
 colorPatchSize = 10
 
+[season]
+# Optional real-world calendar mode. Uses the client computer's local date.
+# Start/end are MM-dd. Start is where fade-in begins; end is where fade-out reaches zero.
+calendarTimingEnabled = false
+autumnStartDate = "09-01"
+autumnEndDate = "11-30"
+seasonBlendDays = 21
+# Deterministic +/- day variation between nearby stands, so the whole forest does not flip together.
+seasonalVariationDays = 2
+# Negative = earlier, positive = later. Most-specific matching block-name keyword wins.
+speciesTimingOffsets = ["birch=-5", "aspen=-4", "maple=-3", "cherry=-2", "oak=0", "elm=1", "beech=2", "willow=3"]
+
 [compatibility]
 forceInclude = []
 forceExclude = []
 evergreenKeywords = ["spruce", "pine", "fir", "cedar", "redwood", "sequoia", "cypress", "juniper", "hemlock", "conifer", "evergreen"]
-tropicalKeywords = ["jungle", "palm", "coconut", "banana", "tropical", "rainforest", "mangrove", "monsoon"]
-tropicalBiomeKeywords = ["jungle", "rainforest", "tropical", "tropics", "monsoon", "mangrove"]
+tropicalKeywords = ["jungle", "palm", "palmetto", "bamboo", "tropical", "rainforest", "mangrove", "monsoon", "mahogany", "teak", "ebony", "kapok", "ceiba", "banyan", "baobab", "rubber", "rattan", "liana"]
+tropicalBiomeKeywords = ["jungle", "rainforest", "tropical", "tropics", "monsoon", "mangrove", "bamboo"]
