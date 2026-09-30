@@ -30,6 +30,13 @@ repositories {
             includeGroup "maven.modrinth"
         }
     }
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
 }
 
 neoForge {
@@ -73,6 +80,7 @@ dependencies {
     // Development/runtime only: test against current DH 3.3.2 for Minecraft 1.21.4.
     // This is not packaged into Autumn Foliage and is not a required end-user dependency.
     localRuntime "maven.modrinth:uCdwusMi:t08qeDio"
+    localRuntime "maven.modrinth:AANobbMI:XgEfENfn"
 }
 
 tasks.withType(JavaCompile).configureEach {
