@@ -13,11 +13,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Makes otherwise-untinted vegetation quads participate in the standard BlockColor pipeline.
- * Because the decision is based on the runtime BlockState, all baked models can be wrapped safely;
- * non-vegetation and item renders are returned untouched.
+ *
+ * NeoForge 1.21.1 still uses BakedModelWrapper here. Normal vegetation gets tint index 0 only on
+ * otherwise-untinted quads. Living bamboo is handled specially: every bamboo quad is routed by
+ * its actual sprite so stalks use tint index 1 and leaf/sapling geometry uses tint index 0.
  */
 public final class TintForcingBakedModel extends BakedModelWrapper<BakedModel> {
     public TintForcingBakedModel(BakedModel originalModel) {
@@ -48,6 +51,15 @@ public final class TintForcingBakedModel extends BakedModelWrapper<BakedModel> {
         }
 
         VegetationType type = VegetationClassifier.classify(state);
+
+        if (VegetationClassifier.isBambooPlant(state)) {
+            if (type == VegetationType.NONE ||
+                    (type == VegetationType.TROPICAL && !AutumnConfig.runtime().autumnalTropics())) {
+                return quads;
+            }
+            return tintBambooQuads(quads);
+        }
+
         if (!VegetationClassifier.canForceTintWholeModel(state, type)) {
             return quads;
         }
@@ -68,16 +80,30 @@ public final class TintForcingBakedModel extends BakedModelWrapper<BakedModel> {
             if (quad.isTinted()) {
                 out.add(quad);
             } else {
-                out.add(new BakedQuad(
-                        quad.getVertices(),
-                        0,
-                        quad.getDirection(),
-                        quad.getSprite(),
-                        quad.isShade(),
-                        quad.hasAmbientOcclusion()
-                ));
+                out.add(withTintIndex(quad, 0));
             }
         }
         return out;
+    }
+
+    private static List<BakedQuad> tintBambooQuads(List<BakedQuad> quads) {
+        List<BakedQuad> out = new ArrayList<>(quads.size());
+        for (BakedQuad quad : quads) {
+            String spritePath = quad.getSprite().contents().name().getPath().toLowerCase(Locale.ROOT);
+            int tintIndex = spritePath.contains("bamboo_stalk") ? 1 : 0;
+            out.add(withTintIndex(quad, tintIndex));
+        }
+        return out;
+    }
+
+    private static BakedQuad withTintIndex(BakedQuad quad, int tintIndex) {
+        return new BakedQuad(
+                quad.getVertices(),
+                tintIndex,
+                quad.getDirection(),
+                quad.getSprite(),
+                quad.isShade(),
+                quad.hasAmbientOcclusion()
+        );
     }
 }

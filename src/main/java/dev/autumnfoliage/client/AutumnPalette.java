@@ -54,6 +54,26 @@ public final class AutumnPalette {
 
     private static final int EVERGREEN_AUTUMN = 0xFF84934A;
 
+    // Bamboo textures are already strongly green. Minecraft block tinting multiplies texture RGB,
+    // so a yellow/gold multiplier with a high green channel can still look almost vanilla green.
+    // These dedicated multipliers intentionally suppress green/blue enough that every bamboo
+    // state visibly shifts while retaining the texture's own shading.
+    private static final int[] BAMBOO_LEAF_GRADIENT = {
+            0xFFFF6A18,
+            0xFFFF7418,
+            0xFFF45D16,
+            0xFFE95213,
+            0xFFDC4911
+    };
+
+    private static final int[] BAMBOO_STALK_GRADIENT = {
+            0xFFFF7A28,
+            0xFFF46B22,
+            0xFFE95E1D,
+            0xFFDC5319,
+            0xFFCE4916
+    };
+
     private AutumnPalette() {}
 
     public static int target(VegetationType type, BlockState state, BlockPos pos) {
@@ -63,6 +83,40 @@ public final class AutumnPalette {
             case DECIDUOUS_LEAVES, TROPICAL, SAPLING, VINE_SHRUB -> leafTarget(state, pos);
             default -> 0xFFFFFFFF;
         };
+    }
+
+
+    /**
+     * Bamboo leaf textures are pre-colored green rather than neutral/grayscale like many normal
+     * leaf textures. Use a dedicated rust/orange multiplier with only smooth world-space variation.
+     * Avoid the normal species-family Voronoi selection here: its gold family can preserve so much
+     * green that neighboring bamboo patches look completely untinted.
+     */
+    public static int bambooLeafTarget(BlockPos pos) {
+        return sampleGradient(
+                BAMBOO_LEAF_GRADIENT,
+                smoothNoise(pos, 0xB4A8B11L, Math.max(12, AutumnConfig.runtime().colorPatchSize() * 2))
+        );
+    }
+
+    /**
+     * Bamboo stalks use the same smooth-only strategy but a slightly milder orange/brown multiplier
+     * so the stem remains visually distinct from the leaves while still participating in autumn.
+     */
+    public static int bambooStalkTarget(BlockPos pos) {
+        return sampleGradient(
+                BAMBOO_STALK_GRADIENT,
+                smoothNoise(pos, 0xB4A8B00L, Math.max(12, AutumnConfig.runtime().colorPatchSize() * 2))
+        );
+    }
+
+    /**
+     * Distant Horizons exposes one representative color for a bamboo block rather than the
+     * separate leaf/stalk quads used by Minecraft's normal model renderer. Blend both bamboo
+     * channels into a stable LOD multiplier, weighted slightly toward the visually dominant leaves.
+     */
+    public static int bambooLodTarget(BlockPos pos) {
+        return mix(bambooStalkTarget(pos), bambooLeafTarget(pos), 0.65);
     }
 
     private static int leafTarget(BlockState state, BlockPos pos) {

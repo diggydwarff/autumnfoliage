@@ -16,20 +16,23 @@ import java.util.function.Consumer;
 /** Player-friendly one-item-per-row editor for compatibility lists. */
 final class StringListEditorScreen extends Screen {
     enum Kind {
-        FORCE_INCLUDE("Force Include Blocks", "Exact block IDs Autumn Foliage should always process.", true),
-        FORCE_EXCLUDE("Force Exclude Blocks", "Exact block IDs that should never be recolored.", true),
-        EVERGREEN_KEYWORDS("Evergreen Keywords", "Name fragments used to recognize conifers and evergreens.", false),
-        TROPICAL_KEYWORDS("Tropical Block Keywords", "Name fragments used to recognize tropical vegetation.", false),
-        TROPICAL_BIOME_KEYWORDS("Tropical Biome Keywords", "Biome name fragments treated as tropical when Autumnal Tropics is off.", false);
+        FORCE_INCLUDE("Force Include Blocks", "Exact block IDs Autumn Foliage should always process.", true, false),
+        FORCE_EXCLUDE("Force Exclude Blocks", "Exact block IDs that should never be recolored.", true, false),
+        EVERGREEN_KEYWORDS("Evergreen Keywords", "Name fragments used to recognize conifers and evergreens.", false, false),
+        TROPICAL_KEYWORDS("Tropical Block Keywords", "Name fragments used to recognize tropical vegetation.", false, false),
+        TROPICAL_BIOME_KEYWORDS("Tropical Biome Keywords", "Biome name fragments treated as tropical when Autumnal Tropics is off.", false, false),
+        SPECIES_TIMING_OFFSETS("Species Timing Offsets", "Tree-name timing offsets in days, e.g. birch=-5 or oak=2.", false, true);
 
         final String title;
         final String description;
         final boolean resourceIds;
+        final boolean timingOffsets;
 
-        Kind(String title, String description, boolean resourceIds) {
+        Kind(String title, String description, boolean resourceIds, boolean timingOffsets) {
             this.title = title;
             this.description = description;
             this.resourceIds = resourceIds;
+            this.timingOffsets = timingOffsets;
         }
     }
 
@@ -157,6 +160,11 @@ final class StringListEditorScreen extends Screen {
                 saveButton.active = false;
                 return;
             }
+            if (kind.timingOffsets && !isTimingOffset(value)) {
+                validationMessage = "Invalid timing offset: " + value + "  (use keyword=days, -30 to 30)";
+                saveButton.active = false;
+                return;
+            }
         }
         validationMessage = "";
         saveButton.active = true;
@@ -173,6 +181,17 @@ final class StringListEditorScreen extends Screen {
         }
         onSave.accept(List.copyOf(cleaned));
         Minecraft.getInstance().setScreen(parent);
+    }
+
+    private static boolean isTimingOffset(String value) {
+        String[] parts = value.trim().split("=", -1);
+        if (parts.length != 2 || parts[0].isBlank()) return false;
+        try {
+            int days = Integer.parseInt(parts[1].trim());
+            return days >= -30 && days <= 30;
+        } catch (NumberFormatException ignored) {
+            return false;
+        }
     }
 
     private static boolean isResourceId(String value) {
@@ -196,9 +215,9 @@ final class StringListEditorScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         // Keep labels above the blurred background/widget pass so they remain crisp at every GUI scale.
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, 16, 0xFFFFFF);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, 16, 0xFFFFFFFF);
         if (this.height >= 260) {
-            graphics.drawCenteredString(this.font, kind.description, this.width / 2, 34, 0xD0D0D0);
+            graphics.drawCenteredString(this.font, kind.description, this.width / 2, 34, 0xFFD0D0D0);
         }
 
         int start = page * rowsPerPage;
@@ -206,18 +225,18 @@ final class StringListEditorScreen extends Screen {
         int y = 76;
         for (int index = start; index < end; index++) {
             graphics.drawString(this.font, Integer.toString(index + 1), panelLeft + 6,
-                    y + (index - start) * 28 + 6, 0xB8B8B8, false);
+                    y + (index - start) * 28 + 6, 0xFFB8B8B8, false);
         }
 
         if (items.isEmpty()) {
-            graphics.drawCenteredString(this.font, "No entries. Click Add to create one.", this.width / 2, 92, 0xB8B8B8);
+            graphics.drawCenteredString(this.font, "No entries. Click Add to create one.", this.width / 2, 92, 0xFFB8B8B8);
         }
 
         String pageText = "Page " + (page + 1) + " / " + pageCount() + "  -  " + items.size() + " entries";
-        graphics.drawCenteredString(this.font, pageText, this.width / 2, this.height - 72, 0xB8B8B8);
+        graphics.drawCenteredString(this.font, pageText, this.width / 2, this.height - 72, 0xFFB8B8B8);
 
         if (!validationMessage.isBlank()) {
-            graphics.drawCenteredString(this.font, validationMessage, this.width / 2, 52, 0xE06C75);
+            graphics.drawCenteredString(this.font, validationMessage, this.width / 2, 52, 0xFFE06C75);
         }
     }
 }

@@ -17,6 +17,12 @@ public record ClientConfigSnapshot(
         double evergreenStrength,
         boolean autumnalTropics,
         int colorPatchSize,
+        boolean calendarTimingEnabled,
+        String autumnStartDate,
+        String autumnEndDate,
+        int seasonBlendDays,
+        int seasonalVariationDays,
+        List<String> speciesTimingOffsets,
         List<String> forceInclude,
         List<String> forceExclude,
         List<String> evergreenKeywords,
@@ -25,6 +31,7 @@ public record ClientConfigSnapshot(
 ) {
     public ClientConfigSnapshot {
         ranges = List.copyOf(ranges);
+        speciesTimingOffsets = List.copyOf(speciesTimingOffsets);
         forceInclude = List.copyOf(forceInclude);
         forceExclude = List.copyOf(forceExclude);
         evergreenKeywords = List.copyOf(evergreenKeywords);
